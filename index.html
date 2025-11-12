@@ -79,7 +79,7 @@
       let animationId = null;
       let holdTimer = null; 
       let hoverStarted = false; 
-      let isTouch = false; // فلاج لتحديد إذا كان التفاعل عن طريق اللمس
+      let isTouch = false; 
 
       const parentGroup = rect.closest('g');
       const baseImage = parentGroup ? parentGroup.querySelector('.base-image') : null;
@@ -167,35 +167,37 @@
       }
 
       const anchor = rect.closest('a'); 
+      let isPrevented = false; // فلاج جديد عشان نعرف هل منعنا فتح الرابط الافتراضي ولا لأ
 
       const handlePress = (e) => {
-        // لو الـ Press اتكرر لنفس العنصر أثناء عمل الـ hover، نتجاهله
         if(holdTimer || hoverStarted) return;
         
-        // منع فتح الرابط الافتراضي للتحكم في توقيته
-        e.preventDefault(); 
+        isTouch = (e.type === 'touchstart');
         
-        // لو في عنصر تاني معموله Hover، نوقفه
+        // نمنع الفتح التلقائي للرابط عشان ندي فرصة للضغط المطول يشتغل
+        e.preventDefault(); 
+        isPrevented = true; 
+
         if (activeHover && activeHover !== rect) stopHover(activeHover);
 
-        // تحديد ما إذا كان التفاعل لمسًا
-        isTouch = (e.type === 'touchstart');
-
-        // بدأ مؤقت الضغط المطول
         holdTimer = setTimeout(() => {
-          // لو المؤقت خلص بدون ما يتلغي (يعني كان ضغط مطول)
           startHover();
           holdTimer = null;
         }, HOLD_DURATION);
       };
 
       const handleRelease = (e) => {
-        // لو الـ Release اتعمل قبل ما الـ Hover يبدأ
+        // نمنع أي سلوك افتراضي للـ 'mouseup' أو 'touchend'
+        // عشان نتحكم في فتح الرابط بنفسنا
+        if(e.type === 'mouseup' || e.type === 'touchend') {
+            e.preventDefault();
+        }
+
         if(holdTimer){
           clearTimeout(holdTimer);
           holdTimer = null;
           // ضغطة سريعة -> نفتح الرابط
-          if (anchor && !hoverStarted) {
+          if (anchor) {
             window.open(anchor.href, anchor.target || '_self');
           }
         } else if (hoverStarted) {
@@ -206,13 +208,13 @@
           stopHover();
         }
         
-        // إعادة تعيين حالة الـ hoverStarted للبدء من جديد
         hoverStarted = false; 
+        isPrevented = false;
         isTouch = false;
       };
 
       const handleCancel = (e) => {
-        // نتاكد ان الـ cancel جه من لمسة سابقة عشان ما يتعارضش مع الـ mouseleave
+        // لو الإلغاء كان من ماوس (mouseleave) أو touchcancel
         if (e.type === 'touchcancel' || (e.type === 'mouseleave' && !isTouch)) {
             if(holdTimer){
               clearTimeout(holdTimer);
@@ -220,27 +222,26 @@
             }
             stopHover();
             hoverStarted = false; 
+            isPrevented = false;
             isTouch = false;
         }
       };
       
-      // ربط أحداث اللمس (للموبايل)
+      // أحداث اللمس (للموبايل)
       rect.addEventListener('touchstart', handlePress, {passive: false});
       rect.addEventListener('touchend', handleRelease);
       rect.addEventListener('touchcancel', handleCancel);
 
-      // ربط أحداث الماوس (للكمبيوتر)
+      // أحداث الماوس (للكمبيوتر)
       rect.addEventListener('mousedown', handlePress, {passive: false});
       rect.addEventListener('mouseup', handleRelease);
       rect.addEventListener('mouseleave', handleCancel);
     }
 
-    // لِف على كل الـ groups وخد منهم كل الـ rects اللي ليها class='image-mapper-shape'
     allGroups.forEach(group => {
         group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i + Date.now()));
     });
 
-    // لِف على كل الـ groups عشان الـ Observer يراقبهم كلهم لو ضفت روابط جديدة
     allGroups.forEach(group => {
         const observer = new MutationObserver(mutations => {
           mutations.forEach(mutation => {

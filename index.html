@@ -76,10 +76,10 @@
       let zoomPart = null;
       let clipPathId = `clip-${index}`;
       let animationId = null;
-      const padding = 5; 
       const scale = 1.1;
 
       const parentGroup = rect.closest('g');
+      const linkA = rect.closest('a'); // **جلب عنصر الرابط (<a>)**
       // بنجيب مسار الصورة وأبعادها
       const baseImage = parentGroup ? parentGroup.querySelector('.base-image') : null;
       const imageURL = baseImage ? baseImage.getAttribute('data-image-url') : 'image/1.png';
@@ -98,23 +98,37 @@
         }
       }
 
-      // **إيفنتات اللمس (Touch Events): عشان يفتح الرابط لما تشيل صباعك**
-      // لما تضغط بصباعك (بيظهر الزوم)
+      // **إيفنتات اللمس (Touch Events): لعمل الـ Hover ثم فتح الرابط**
       rect.addEventListener('touchstart', (e) => {
-        // e.preventDefault();  // مش بنلغي الديفولت عشان الرابط يفتح في النهاية
+        // e.preventDefault(); 
         if(activeHover && activeHover !== rect) stopHover(); 
         startHover(); 
       }, {passive: false});
 
-      // لما تشيل صباعك: الرابط بيفتح طبيعي والـ hover بيختفي بعد تأخير
-      rect.addEventListener('touchend', () => {
+      rect.addEventListener('touchend', (e) => {
+          // **نلغي الديفولت عشان نتحكم في فتح الرابط**
+          e.preventDefault(); 
+          
+          // نلغي الـ Hover بعد تأخير (500 مللي ثانية)
           setTimeout(stopHover, 500); 
+          
+          if (linkA) {
+              // **فتح الرابط يدويًا بالـ JavaScript**
+              if (linkA.target === '_blank') {
+                window.open(linkA.href, '_blank');
+              } else {
+                window.location.href = linkA.href;
+              }
+          }
       });
       rect.addEventListener('touchcancel', stopHover);
 
-      // **إيفنتات الماوس (Mouse Events): عشان الـ PC**
-      rect.addEventListener('mouseenter', startHover);
-      rect.addEventListener('mouseleave', stopHover);
+      // **إيفنتات الماوس (Mouse Events): للـ PC**
+      rect.addEventListener('mouseenter', startHover); // الـ Hover هيظهر لما تدخل بالماوس
+      rect.addEventListener('mouseleave', stopHover); // الـ Hover هيختفي لما تطلع بالماوس
+
+      // الـ Click بتاع الماوس هيفتح الرابط طبيعي وهنخلي الـ Hover يختفي
+      rect.addEventListener('click', stopHover);
 
 
       function startHover() {

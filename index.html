@@ -71,15 +71,92 @@
     const clipDefs = document.getElementById('clip-defs');
     let activeHover = null;
     const ORIGINAL_IMAGE_HEIGHT = 2454; 
-    const HOLD_DURATION = 500; // مدة الضغط المطول بالمللي ثانية
+    const HOLD_DURATION = 500; 
 
+    // عشان كل رابط يبقى له الـ ZoomPart بتاعه
+    const zoomParts = new Map();
+    const clipPaths = new Map();
+
+    function startHover(rect, x, y, width, height, offsetX, offsetY, imageURL, imageWidth, imageHeight) {
+        // التأكد من إيقاف أي hover سابق
+        if (activeHover && activeHover !== rect) stopHover(activeHover);
+        if (activeHover === rect) return;
+        activeHover = rect;
+        rect._hoverStarted = true;
+
+        let clipPathId = `clip-${Date.now()}`;
+        
+        let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
+        clip.setAttribute('id', clipPathId);
+        let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        clipRect.setAttribute('x', x + offsetX); 
+        clipRect.setAttribute('y', y + offsetY); 
+        clipRect.setAttribute('width', width);
+        clipRect.setAttribute('height', height);
+        clip.appendChild(clipRect);
+        clipDefs.appendChild(clip);
+        clipPaths.set(rect, clip); // حفظ الـ ClipPath
+
+        let zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
+        zoomPart.setAttribute('href', imageURL);
+        zoomPart.setAttribute('width', imageWidth);
+        zoomPart.setAttribute('height', imageHeight);
+        zoomPart.setAttribute('class','zoom-part');
+        zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
+
+        zoomPart.setAttribute('x', offsetX);
+        zoomPart.setAttribute('y', offsetY);
+
+        const transformOriginX = x + width/2 + offsetX;
+        const transformOriginY = y + height/2 + offsetY;
+
+        zoomPart.style.transformOrigin = `${transformOriginX}px ${transformOriginY}px`;
+        zoomPart.style.opacity = 0;
+
+        rect.ownerSVGElement.appendChild(zoomPart); 
+        zoomParts.set(rect, zoomPart); // حفظ الـ ZoomPart
+
+        const scale = 1.1;
+        rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
+        rect.style.transform = `scale(${scale})`;
+
+        zoomPart.style.transform = `scale(${scale})`;
+        zoomPart.style.opacity = 1;
+
+        let hue = 0;
+        rect._animationId = setInterval(() => {
+          hue = (hue + 1) % 360;
+          const glow = `drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue+60)%360},100%,60%))`;
+          rect.style.filter = glow;
+          zoomPart.style.filter = glow;
+        }, 100);
+      }
+
+      function stopHover(rect) {
+        if(!activeHover || activeHover !== rect) return;
+
+        rect.style.transform = 'scale(1)';
+        rect.style.filter = 'none';
+
+        if(rect._animationId) clearInterval(rect._animationId);
+        
+        const zoomPart = zoomParts.get(rect);
+        if(zoomPart){ zoomPart.remove(); zoomParts.delete(rect); }
+        
+        const clip = clipPaths.get(rect);
+        if(clip){ clip.remove(); clipPaths.delete(rect); }
+        
+        activeHover = null;
+        rect._hoverStarted = false;
+        rect._holdTimer = null; 
+      }
+      
     function attachHover(rect, index) {
-      let zoomPart = null;
-      let clipPathId = `clip-${index}`;
-      let animationId = null;
-      let holdTimer = null; 
-      let hoverStarted = false; 
-      let isTouch = false; 
+      // تعريف خصائص خاصة بكل مستطيل
+      rect._holdTimer = null;
+      rect._hoverStarted = false;
+      rect._isTouch = false;
+      rect._animationId = null;
 
       const parentGroup = rect.closest('g');
       const baseImage = parentGroup ? parentGroup.querySelector('.base-image') : null;
@@ -98,150 +175,88 @@
         }
       }
 
-      function startHover() {
-        if (activeHover && activeHover !== rect) stopHover(activeHover);
-        if (activeHover === rect) return;
-        activeHover = rect;
-        hoverStarted = true;
-
-        const x = parseFloat(rect.getAttribute('x'));
-        const y = parseFloat(rect.getAttribute('y'));
-        const width = parseFloat(rect.getAttribute('width'));
-        const height = parseFloat(rect.getAttribute('height'));
-
-        let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
-        clip.setAttribute('id', clipPathId);
-        let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-        clipRect.setAttribute('x', x + offsetX); 
-        clipRect.setAttribute('y', y + offsetY); 
-        clipRect.setAttribute('width', width);
-        clipRect.setAttribute('height', height);
-        clip.appendChild(clipRect);
-        clipDefs.appendChild(clip);
-
-        zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
-        zoomPart.setAttribute('href', imageURL);
-        zoomPart.setAttribute('width', imageWidth);
-        zoomPart.setAttribute('height', imageHeight);
-        zoomPart.setAttribute('class','zoom-part');
-        zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
-
-        zoomPart.setAttribute('x', offsetX);
-        zoomPart.setAttribute('y', offsetY);
-
-        const transformOriginX = x + width/2 + offsetX;
-        const transformOriginY = y + height/2 + offsetY;
-
-        zoomPart.style.transformOrigin = `${transformOriginX}px ${transformOriginY}px`;
-        zoomPart.style.opacity = 0;
-
-        rect.ownerSVGElement.appendChild(zoomPart); 
-
-        const scale = 1.1;
-        rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
-        rect.style.transform = `scale(${scale})`;
-
-        zoomPart.style.transform = `scale(${scale})`;
-        zoomPart.style.opacity = 1;
-
-        let hue = 0;
-        animationId = setInterval(() => {
-          hue = (hue + 1) % 360;
-          const glow = `drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue+60)%360},100%,60%))`;
-          rect.style.filter = glow;
-          zoomPart.style.filter = glow;
-        }, 100);
-      }
-
-      function stopHover(targetRect = rect) {
-        if(!activeHover) return;
-        if (targetRect !== activeHover) return; 
-
-        activeHover.style.transform = 'scale(1)';
-        activeHover.style.filter = 'none';
-        if(animationId) clearInterval(animationId);
-        if(zoomPart){ zoomPart.remove(); zoomPart = null; }
-        const existingClip = document.getElementById(clipPathId);
-        if(existingClip) existingClip.remove();
-        activeHover = null;
-      }
-
+      const x = parseFloat(rect.getAttribute('x'));
+      const y = parseFloat(rect.getAttribute('y'));
+      const width = parseFloat(rect.getAttribute('width'));
+      const height = parseFloat(rect.getAttribute('height'));
       const anchor = rect.closest('a'); 
-      let isPrevented = false; // فلاج جديد عشان نعرف هل منعنا فتح الرابط الافتراضي ولا لأ
-
+      
       const handlePress = (e) => {
-        if(holdTimer || hoverStarted) return;
+        if(rect._holdTimer || rect._hoverStarted) return;
         
-        isTouch = (e.type === 'touchstart');
+        rect._isTouch = (e.type === 'touchstart');
         
         // نمنع الفتح التلقائي للرابط عشان ندي فرصة للضغط المطول يشتغل
         e.preventDefault(); 
-        isPrevented = true; 
 
+        // لو في عنصر تاني معموله Hover، نوقفه
         if (activeHover && activeHover !== rect) stopHover(activeHover);
 
-        holdTimer = setTimeout(() => {
-          startHover();
-          holdTimer = null;
+        // بدأ مؤقت الضغط المطول
+        rect._holdTimer = setTimeout(() => {
+          // لو المؤقت خلص بدون ما يتلغي (يعني كان ضغط مطول)
+          startHover(rect, x, y, width, height, offsetX, offsetY, imageURL, imageWidth, imageHeight);
+          rect._holdTimer = null;
         }, HOLD_DURATION);
       };
 
       const handleRelease = (e) => {
-        // نمنع أي سلوك افتراضي للـ 'mouseup' أو 'touchend'
-        // عشان نتحكم في فتح الرابط بنفسنا
+        // نمنع أي سلوك افتراضي للـ 'mouseup' أو 'touchend' عشان نتحكم في فتح الرابط بنفسنا
         if(e.type === 'mouseup' || e.type === 'touchend') {
             e.preventDefault();
         }
 
-        if(holdTimer){
-          clearTimeout(holdTimer);
-          holdTimer = null;
+        if(rect._holdTimer){
+          clearTimeout(rect._holdTimer);
+          rect._holdTimer = null;
           // ضغطة سريعة -> نفتح الرابط
           if (anchor) {
             window.open(anchor.href, anchor.target || '_self');
           }
-        } else if (hoverStarted) {
+        } else if (rect._hoverStarted) {
           // ضغطة مطولة (الـ Hover اشتغل) -> نفتح الرابط ونوقف الـ Hover
           if (anchor) {
             window.open(anchor.href, anchor.target || '_self');
           }
-          stopHover();
+          stopHover(rect);
         }
         
-        hoverStarted = false; 
-        isPrevented = false;
-        isTouch = false;
+        // إعادة تعيين الحالة
+        rect._hoverStarted = false; 
+        rect._isTouch = false;
       };
 
       const handleCancel = (e) => {
         // لو الإلغاء كان من ماوس (mouseleave) أو touchcancel
-        if (e.type === 'touchcancel' || (e.type === 'mouseleave' && !isTouch)) {
-            if(holdTimer){
-              clearTimeout(holdTimer);
-              holdTimer = null;
+        if (e.type === 'touchcancel' || (e.type === 'mouseleave' && !rect._isTouch)) {
+            if(rect._holdTimer){
+              clearTimeout(rect._holdTimer);
+              rect._holdTimer = null;
             }
-            stopHover();
-            hoverStarted = false; 
-            isPrevented = false;
-            isTouch = false;
+            stopHover(rect);
+            // إعادة تعيين الحالة
+            rect._hoverStarted = false; 
+            rect._isTouch = false;
         }
       };
       
-      // أحداث اللمس (للموبايل)
+      // ربط أحداث اللمس (للموبايل)
       rect.addEventListener('touchstart', handlePress, {passive: false});
       rect.addEventListener('touchend', handleRelease);
       rect.addEventListener('touchcancel', handleCancel);
 
-      // أحداث الماوس (للكمبيوتر)
+      // ربط أحداث الماوس (للكمبيوتر)
       rect.addEventListener('mousedown', handlePress, {passive: false});
       rect.addEventListener('mouseup', handleRelease);
       rect.addEventListener('mouseleave', handleCancel);
     }
 
+    // لِف على كل الـ groups وخد منهم كل الـ rects اللي ليها class='image-mapper-shape'
     allGroups.forEach(group => {
         group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i + Date.now()));
     });
 
+    // لِف على كل الـ groups عشان الـ Observer يراقبهم كلهم لو ضفت روابط جديدة
     allGroups.forEach(group => {
         const observer = new MutationObserver(mutations => {
           mutations.forEach(mutation => {

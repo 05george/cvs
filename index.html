@@ -71,7 +71,7 @@
     const clipDefs = document.getElementById('clip-defs');
     let activeHover = null;
     const ORIGINAL_IMAGE_HEIGHT = 2454; 
-    const HOLD_DURATION = 500; 
+    const HOLD_DURATION = 500; // الفترة الزمنية للضغط المطول بالمللي ثانية
 
     // عشان كل رابط يبقى له الـ ZoomPart بتاعه
     const zoomParts = new Map();
@@ -85,7 +85,7 @@
         rect._hoverStarted = true;
 
         let clipPathId = `clip-${Date.now()}`;
-        
+
         let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
         clip.setAttribute('id', clipPathId);
         let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
@@ -139,18 +139,18 @@
         rect.style.filter = 'none';
 
         if(rect._animationId) clearInterval(rect._animationId);
-        
+
         const zoomPart = zoomParts.get(rect);
         if(zoomPart){ zoomPart.remove(); zoomParts.delete(rect); }
-        
+
         const clip = clipPaths.get(rect);
         if(clip){ clip.remove(); clipPaths.delete(rect); }
-        
+
         activeHover = null;
         rect._hoverStarted = false;
         rect._holdTimer = null; 
       }
-      
+
     function attachHover(rect, index) {
       // تعريف خصائص خاصة بكل مستطيل
       rect._holdTimer = null;
@@ -180,12 +180,12 @@
       const width = parseFloat(rect.getAttribute('width'));
       const height = parseFloat(rect.getAttribute('height'));
       const anchor = rect.closest('a'); 
-      
+
       const handlePress = (e) => {
         if(rect._holdTimer || rect._hoverStarted) return;
-        
+
         rect._isTouch = (e.type === 'touchstart');
-        
+
         // نمنع الفتح التلقائي للرابط عشان ندي فرصة للضغط المطول يشتغل
         e.preventDefault(); 
 
@@ -207,9 +207,9 @@
         }
 
         if(rect._holdTimer){
+          // ضغطة سريعة -> نفتح الرابط
           clearTimeout(rect._holdTimer);
           rect._holdTimer = null;
-          // ضغطة سريعة -> نفتح الرابط
           if (anchor) {
             window.open(anchor.href, anchor.target || '_self');
           }
@@ -220,7 +220,7 @@
           }
           stopHover(rect);
         }
-        
+
         // إعادة تعيين الحالة
         rect._hoverStarted = false; 
         rect._isTouch = false;
@@ -239,7 +239,7 @@
             rect._isTouch = false;
         }
       };
-      
+
       // ربط أحداث اللمس (للموبايل)
       rect.addEventListener('touchstart', handlePress, {passive: false});
       rect.addEventListener('touchend', handleRelease);

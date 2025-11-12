@@ -41,27 +41,36 @@
 </head>
 <body>
 
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 2048 4908" preserveAspectRatio="xMidYMid meet">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 4908" preserveAspectRatio="xMidYMid meet">
   <defs id="clip-defs"></defs>
 
-  <g id="main-group">
-    <image x="0" y="0" xlink:href="image/1.png" data-src="image/1.png" width="1024" height="2454"/>
-    <image x="1024" y="0" xlink:href="image/2.png" data-src="image/2.png" width="1024" height="2454"/>
-    <image x="0" y="2454" xlink:href="image/3.png" data-src="image/3.png" width="1024" height="2454"/>
-    <image x="1024" y="2454" xlink:href="image/4.png" data-src="image/4.png" width="1024" height="2454"/>
-    
+  <g id="group-1" transform="translate(0,0)">
+    <image href="image/1.png" width="1024" height="2454" data-image-url="image/1.png" class="base-image"/>
     <a href="block/physio/1.pdf" target="_blank"><rect x="254" y="423" width="114" height="467" class="image-mapper-shape"/></a>
     <a href="block/histo/1.pdf" target="_blank"><rect x="253" y="1403" width="114" height="438" class="image-mapper-shape"/></a>
     <a href="block/physio/2.pdf" target="_blank"><rect x="484" y="314" width="113" height="459" class="image-mapper-shape"/></a>
-    <a href="block/physio/3.pdf" target="_blank"><rect x="488" y="1838" width="108" height="441" class="image-mapper-shape"/></a>
     <a href="block/pharma/1.pdf" target="_blank"><rect x="599" y="422" width="112" height="471" class="image-mapper-shape"/></a>
+    <a href="block/physio/3.pdf" target="_blank"><rect x="488" y="1838" width="108" height="441" class="image-mapper-shape"/></a>
     <a href="block/bio/1.pdf" target="_blank"><rect x="599" y="893" width="112" height="511" class="image-mapper-shape"/></a>
   </g>
+
+  <g id="group-2" transform="translate(1024,0)">
+    <image href="image/2.png" width="1024" height="2454" data-image-url="image/2.png" class="base-image"/>
+</g>
+
+  <g id="group-3" transform="translate(0,2454)">
+    <image href="image/3.png" width="1024" height="2454" data-image-url="image/3.png" class="base-image"/>
+</g>
+
+  <g id="group-4" transform="translate(1024,2454)">
+    <image href="image/4.png" width="1024" height="2454" data-image-url="image/4.png" class="base-image"/>
+</g>
+
   <script>
-    const mainGroup = document.getElementById('main-group');
+    const allGroups = document.querySelectorAll('g');
     const clipDefs = document.getElementById('clip-defs');
     let activeHover = null;
-    const ORIGINAL_IMAGE_HEIGHT = 2454;
+    const ORIGINAL_IMAGE_HEIGHT = 2454; 
 
     function attachHover(rect, index) {
       let zoomPart = null;
@@ -69,6 +78,25 @@
       let animationId = null;
       const padding = 5;
       const scale = 1.1;
+
+      const parentGroup = rect.closest('g');
+      // بنجيب مسار الصورة وأبعادها
+      const baseImage = parentGroup ? parentGroup.querySelector('.base-image') : null;
+      const imageURL = baseImage ? baseImage.getAttribute('data-image-url') : 'image/1.png';
+      const imageWidth = baseImage ? parseFloat(baseImage.getAttribute('width')) : 1024;
+      const imageHeight = baseImage ? parseFloat(baseImage.getAttribute('height')) : ORIGINAL_IMAGE_HEIGHT;
+
+      // بنجيب إزاحة الـ Group (translate)
+      const transform = parentGroup.getAttribute('transform');
+      let offsetX = 0;
+      let offsetY = 0;
+      if (transform) {
+        const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
+        if (match) {
+          offsetX = parseFloat(match[1]) || 0;
+          offsetY = parseFloat(match[2]) || 0;
+        }
+      }
 
       rect.addEventListener('mousemove', e => {
         const bbox = rect.getBoundingClientRect();
@@ -95,25 +123,41 @@
         let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
         clip.setAttribute('id', clipPathId);
         let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-        clipRect.setAttribute('x', x);
-        clipRect.setAttribute('y', y);
+        // 1. Clip Path بيشتغل على الإحداثيات الكلية (إحداثيات المستطيل + إزاحة الـ Group)
+        clipRect.setAttribute('x', x + offsetX); 
+        clipRect.setAttribute('y', y + offsetY); 
         clipRect.setAttribute('width', width);
         clipRect.setAttribute('height', height);
         clip.appendChild(clipRect);
         clipDefs.appendChild(clip);
 
         zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
-        zoomPart.setAttribute('href','image/1.png');
-        zoomPart.setAttribute('width','1024');
-        zoomPart.setAttribute('height', ORIGINAL_IMAGE_HEIGHT);
+        zoomPart.setAttribute('href', imageURL);
+        zoomPart.setAttribute('width', imageWidth);
+        zoomPart.setAttribute('height', imageHeight);
         zoomPart.setAttribute('class','zoom-part');
         zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
-        zoomPart.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
+        
+        // 2. الـ zoomPart بيتحط في مكانه بالـ x و y (إزاحة الـ Group) عشان يتطابق مع الصورة الأصلية
+        zoomPart.setAttribute('x', offsetX);
+        zoomPart.setAttribute('y', offsetY);
+        
+        // 3. نقطة الـ Transform Origin لازم تكون في الإحداثيات الكلية للـ SVG
+        const transformOriginX = x + width/2 + offsetX;
+        const transformOriginY = y + height/2 + offsetY;
+        
+        zoomPart.style.transformOrigin = `${transformOriginX}px ${transformOriginY}px`;
+        
         zoomPart.style.opacity = 0;
-        mainGroup.appendChild(zoomPart);
+        
+        // الـ zoomPart بيضاف للـ SVG مباشرة عشان الـ Clip Path يشتغل
+        rect.ownerSVGElement.appendChild(zoomPart); 
 
+        // الـ rect (المستطيل الشفاف) بيعمل zoom من مكانه داخل الـ group
         rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
         rect.style.transform = `scale(${scale})`;
+        
+        // تطبيق الـ scale على الـ zoomPart
         zoomPart.style.transform = `scale(${scale})`;
         zoomPart.style.opacity = 1;
 
@@ -138,19 +182,26 @@
       }
     }
 
-    mainGroup.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));
-
-    const observer = new MutationObserver(mutations => {
-      mutations.forEach(mutation => {
-        mutation.addedNodes.forEach((node, i) => {
-          if(node.tagName==='A'){
-            const rect = node.querySelector('rect.image-mapper-shape');
-            if(rect) attachHover(rect, Date.now()+i);
-          }
-        });
-      });
+    // لِف على كل الـ groups وخد منهم كل الـ rects اللي ليها class='image-mapper-shape'
+    allGroups.forEach(group => {
+        group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i + Date.now()));
     });
-    observer.observe(mainGroup,{childList:true, subtree:true});
+    
+    // لِف على كل الـ groups عشان الـ Observer يراقبهم كلهم لو ضفت روابط جديدة
+    allGroups.forEach(group => {
+        const observer = new MutationObserver(mutations => {
+          mutations.forEach(mutation => {
+            mutation.addedNodes.forEach((node, i) => {
+              if(node.tagName==='A'){
+                const rect = node.querySelector('rect.image-mapper-shape');
+                if(rect) attachHover(rect, Date.now()+i);
+              }
+            });
+          });
+        });
+        observer.observe(group,{childList:true, subtree:true});
+    });
+
   </script>
 </body>
 </html>

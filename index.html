@@ -95,7 +95,7 @@
         clipRect.setAttribute('height', height);
         clip.appendChild(clipRect);
         clipDefs.appendChild(clip);
-        clipPaths.set(rect, clip); // حفظ الـ ClipPath
+        clipPaths.set(rect, clip); 
 
         let zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
         zoomPart.setAttribute('href', imageURL);
@@ -114,7 +114,7 @@
         zoomPart.style.opacity = 0;
 
         rect.ownerSVGElement.appendChild(zoomPart); 
-        zoomParts.set(rect, zoomPart); // حفظ الـ ZoomPart
+        zoomParts.set(rect, zoomPart); 
 
         const scale = 1.1;
         rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;

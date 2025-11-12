@@ -76,7 +76,7 @@
       let zoomPart = null;
       let clipPathId = `clip-${index}`;
       let animationId = null;
-      const padding = 5; // هذا لم يعد مستخدمًا بشكل أساسي للماوس ولكن يمكن الاحتفاظ به
+      const padding = 5; 
       const scale = 1.1;
 
       const parentGroup = rect.closest('g');
@@ -98,26 +98,27 @@
         }
       }
 
-      // **إيفنتات اللمس (Touch Events): عشان يشتغل بالصابع**
-      // لما تضغط بصباعك (كأنها mouseenter)
+      // **إيفنتات اللمس (Touch Events): عشان يفتح الرابط لما تشيل صباعك**
+      // لما تضغط بصباعك (بيظهر الزوم)
       rect.addEventListener('touchstart', (e) => {
-        // منع الـ scrolling التلقائي عشان المستطيل ياخد اللمسة
-        e.preventDefault(); 
+        // e.preventDefault();  // مش بنلغي الديفولت عشان الرابط يفتح في النهاية
         if(activeHover && activeHover !== rect) stopHover(); 
         startHover(); 
       }, {passive: false});
 
-      // لما تشيل صباعك أو اللمسة تتلغي (كأنها mouseleave)
-      rect.addEventListener('touchend', stopHover);
+      // لما تشيل صباعك: الرابط بيفتح طبيعي والـ hover بيختفي بعد تأخير
+      rect.addEventListener('touchend', () => {
+          setTimeout(stopHover, 500); 
+      });
       rect.addEventListener('touchcancel', stopHover);
-      
-      // **إيفنتات الماوس (Mouse Events): بنخليها زي ما هي عشان الـ PC**
+
+      // **إيفنتات الماوس (Mouse Events): عشان الـ PC**
       rect.addEventListener('mouseenter', startHover);
       rect.addEventListener('mouseleave', stopHover);
 
 
       function startHover() {
-        if(activeHover === rect) return; // عشان منعشغلش الـ hover مرتين لو حصل touchstart و mouseenter ورا بعض
+        if(activeHover === rect) return; 
         activeHover = rect;
 
         const x = parseFloat(rect.getAttribute('x'));
@@ -128,7 +129,7 @@
         let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
         clip.setAttribute('id', clipPathId);
         let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-        // 1. Clip Path بيشتغل على الإحداثيات الكلية (إحداثيات المستطيل + إزاحة الـ Group)
+        // 1. Clip Path بيشتغل على الإحداثيات الكلية
         clipRect.setAttribute('x', x + offsetX); 
         clipRect.setAttribute('y', y + offsetY); 
         clipRect.setAttribute('width', width);
@@ -143,11 +144,11 @@
         zoomPart.setAttribute('class','zoom-part');
         zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
 
-        // 2. الـ zoomPart بيتحط في مكانه بالـ x و y (إزاحة الـ Group) عشان يتطابق مع الصورة الأصلية
+        // 2. الـ zoomPart بيتحط في مكانه
         zoomPart.setAttribute('x', offsetX);
         zoomPart.setAttribute('y', offsetY);
 
-        // 3. نقطة الـ Transform Origin لازم تكون في الإحداثيات الكلية للـ SVG
+        // 3. نقطة الـ Transform Origin
         const transformOriginX = x + width/2 + offsetX;
         const transformOriginY = y + height/2 + offsetY;
 
@@ -155,10 +156,10 @@
 
         zoomPart.style.opacity = 0;
 
-        // الـ zoomPart بيضاف للـ SVG مباشرة عشان الـ Clip Path يشتغل
+        // الـ zoomPart بيضاف للـ SVG مباشرة
         rect.ownerSVGElement.appendChild(zoomPart); 
 
-        // الـ rect (المستطيل الشفاف) بيعمل zoom من مكانه داخل الـ group
+        // الـ rect (المستطيل الشفاف) بيعمل zoom 
         rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
         rect.style.transform = `scale(${scale})`;
 

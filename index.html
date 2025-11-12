@@ -71,22 +71,21 @@
     const clipDefs = document.getElementById('clip-defs');
     let activeHover = null;
     const ORIGINAL_IMAGE_HEIGHT = 2454; 
+    const HOLD_DURATION = 500; // 500 ملي ثانية للضغط المطول
 
     function attachHover(rect, index) {
       let zoomPart = null;
       let clipPathId = `clip-${index}`;
       let animationId = null;
-      const padding = 5;
-      const scale = 1.1;
+      let holdTimer = null; 
+      let hoverStarted = false; 
 
       const parentGroup = rect.closest('g');
-      // بنجيب مسار الصورة وأبعادها
       const baseImage = parentGroup ? parentGroup.querySelector('.base-image') : null;
       const imageURL = baseImage ? baseImage.getAttribute('data-image-url') : 'image/1.png';
       const imageWidth = baseImage ? parseFloat(baseImage.getAttribute('width')) : 1024;
       const imageHeight = baseImage ? parseFloat(baseImage.getAttribute('height')) : ORIGINAL_IMAGE_HEIGHT;
 
-      // بنجيب إزاحة الـ Group (translate)
       const transform = parentGroup.getAttribute('transform');
       let offsetX = 0;
       let offsetY = 0;
@@ -98,23 +97,12 @@
         }
       }
 
-      rect.addEventListener('mousemove', e => {
-        const bbox = rect.getBoundingClientRect();
-        const mx = e.clientX - bbox.left;
-        const my = e.clientY - bbox.top;
-        if(mx < padding || mx > bbox.width - padding || my < padding || my > bbox.height - padding){
-          if(activeHover === rect) stopHover();
-          return;
-        }
-        if(activeHover && activeHover !== rect) stopHover();
-        if(activeHover === rect) return;
-        startHover();
-      });
-
-      rect.addEventListener('mouseleave', stopHover);
-
       function startHover() {
+        if (activeHover && activeHover !== rect) stopHover(activeHover);
+        if (activeHover === rect) return;
         activeHover = rect;
+        hoverStarted = true;
+
         const x = parseFloat(rect.getAttribute('x'));
         const y = parseFloat(rect.getAttribute('y'));
         const width = parseFloat(rect.getAttribute('width'));
@@ -123,7 +111,6 @@
         let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
         clip.setAttribute('id', clipPathId);
         let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-        // 1. Clip Path بيشتغل على الإحداثيات الكلية (إحداثيات المستطيل + إزاحة الـ Group)
         clipRect.setAttribute('x', x + offsetX); 
         clipRect.setAttribute('y', y + offsetY); 
         clipRect.setAttribute('width', width);
@@ -138,11 +125,9 @@
         zoomPart.setAttribute('class','zoom-part');
         zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
 
-        // 2. الـ zoomPart بيتحط في مكانه بالـ x و y (إزاحة الـ Group) عشان يتطابق مع الصورة الأصلية
         zoomPart.setAttribute('x', offsetX);
         zoomPart.setAttribute('y', offsetY);
 
-        // 3. نقطة الـ Transform Origin لازم تكون في الإحداثيات الكلية للـ SVG
         const transformOriginX = x + width/2 + offsetX;
         const transformOriginY = y + height/2 + offsetY;
 
@@ -150,14 +135,12 @@
 
         zoomPart.style.opacity = 0;
 
-        // الـ zoomPart بيضاف للـ SVG مباشرة عشان الـ Clip Path يشتغل
         rect.ownerSVGElement.appendChild(zoomPart); 
 
-        // الـ rect (المستطيل الشفاف) بيعمل zoom من مكانه داخل الـ group
+        const scale = 1.1;
         rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
         rect.style.transform = `scale(${scale})`;
 
-        // تطبيق الـ scale على الـ zoomPart
         zoomPart.style.transform = `scale(${scale})`;
         zoomPart.style.opacity = 1;
 
@@ -170,16 +153,73 @@
         }, 100);
       }
 
-      function stopHover() {
+      function stopHover(targetRect = rect) {
         if(!activeHover) return;
-        rect.style.transform = 'scale(1)';
-        rect.style.filter = 'none';
+        if (targetRect !== activeHover) return; 
+
+        activeHover.style.transform = 'scale(1)';
+        activeHover.style.filter = 'none';
         if(animationId) clearInterval(animationId);
         if(zoomPart){ zoomPart.remove(); zoomPart = null; }
         const existingClip = document.getElementById(clipPathId);
         if(existingClip) existingClip.remove();
         activeHover = null;
+        // hoverStarted = false; // لا يجب إعادة تعيينها هنا
       }
+
+      const anchor = rect.closest('a'); 
+
+      const handlePress = (e) => {
+        e.preventDefault(); 
+        
+        if (activeHover && activeHover !== rect) stopHover(activeHover);
+
+        holdTimer = setTimeout(() => {
+          startHover();
+          holdTimer = null;
+        }, HOLD_DURATION);
+
+        if (e.type === 'mousedown') {
+            rect.addEventListener('mouseup', handleRelease, {once: true});
+        }
+      };
+
+      const handleRelease = (e) => {
+        if(holdTimer){
+          clearTimeout(holdTimer);
+          holdTimer = null;
+          // ضغطة سريعة
+          if (anchor && !hoverStarted) {
+            window.open(anchor.href, anchor.target || '_self');
+          }
+        } else if (hoverStarted) {
+          // ضغطة مطولة (الـ Hover اشتغل)
+          if (anchor) {
+            window.open(anchor.href, anchor.target || '_self');
+          }
+          stopHover();
+        }
+        // إعادة تعيين حالة الـ hoverStarted بعد التعامل مع الضغطة
+        hoverStarted = false; 
+      };
+
+      const handleCancel = () => {
+        if(holdTimer){
+          clearTimeout(holdTimer);
+          holdTimer = null;
+        }
+        stopHover();
+        hoverStarted = false; // إعادة تعيين في حالة الإلغاء
+      };
+      
+      rect.addEventListener('touchstart', handlePress, {passive: false});
+      rect.addEventListener('touchend', handleRelease);
+      rect.addEventListener('touchcancel', handleCancel);
+
+      rect.addEventListener('mousedown', handlePress, {passive: false});
+      rect.addEventListener('mouseleave', handleCancel);
+      
+      // لازم نلغي أي سلوك للـ mousemove و mouseleave عشان ما يتعارضوش مع الـ touch
     }
 
     // لِف على كل الـ groups وخد منهم كل الـ rects اللي ليها class='image-mapper-shape'

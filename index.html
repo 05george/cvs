@@ -1,63 +1,165 @@
-<svg style="height=100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 4096 2454">
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خريطة تفاعلية نظيفة</title>
 <style>
-.image-mapper-shape {
-    fill: rgba(0, 0, 0, 0);
-}
-g:hover .image-mapper-shape {
-    stroke: white;
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    height: 100vh;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  svg {
+    display: block;
+    max-width: 100vw;
+    height: 100%;
+    width: auto;
+  }
+
+  .image-mapper-shape {
+    fill: transparent;
+    stroke: yellow;
     stroke-width: 2px;
-    opacity: 100%;
-}
+    transform-origin: center center;
+    transition: transform 0.3s ease, filter 0.3s ease;
+  }
+  .image-mapper-shape#red { stroke: red; }
+
+  .zoom-part {
+    pointer-events: none;
+    transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
+    image-rendering: auto;
+  }
 </style>
-        <image xlink:href="image/1.png"></image> 
-        <image xlink:href="image/2.png" x="1024" y="0"></image>
-        <image xlink:href="image/3.png" x="2028" y="0"></image>
-        <image xlink:href="image/4.png" x="3072" y="0"></image>
-<a xlink:href="block/physio/1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="254" y="423" width="114" height="467" class="image-mapper-shape" data-index="1"></rect>
-</g>
-</a>
-<a xlink:href="block/histo/1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="253" y="1403" width="114" height="438" class="image-mapper-shape" data-index="2"></rect>
-</g>
-</a>
-<a xlink:href="block/physio/2.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="484" y="314" width="113" height="459" class="image-mapper-shape" data-index="3"></rect>
-</g>
-</a>
-<a xlink:href="block/physio/3.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="488" y="1838" width="108" height="441" class="image-mapper-shape" data-index="4"></rect>
-</g>
-</a>
-<a xlink:href="block/pharma/1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="599" y="422" width="112" height="471" class="image-mapper-shape" data-index="5"></rect>
-</g>
-</a>
-<a xlink:href="block/bio/1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="599" y="893" width="112" height="511" class="image-mapper-shape selected" data-index="6"></rect>
-</g>
-</a>
-<a xlink:href="block/patho/s1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="3440" y="653.9228070175438" width="113.77777777777777" height="348.5192982456141" class="image-mapper-shape" data-index="1"></rect>
-</g>
-</a>
-<a xlink:href="block/patho/3.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="3440" y="1363" width="113.77777777777777" height="517.3894736842105" class="image-mapper-shape selected" data-index="2"></rect>
-</g>
-</a>
-<a xlink:href="block/physio/10.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="3440" y="1880.685964912281" width="116.38757309941519" height="315.82397660818674" class="image-mapper-shape selected" data-index="1"></rect>
-</g>
-</a>
-</svg>
+</head>
+<body>
 
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 4908"
+preserveAspectRatio="xMidYMid meet">
+  <defs id="clip-defs"></defs>
 
+  <g transform="translate(0,0)" id="main-group">
+    <image xlink:href="image/1.png" width="1024" height="2454" id="base-image-1"/>
+
+    <a href="block/physio/1.pdf" target="_blank"><rect x="254" y="423" width="114" height="467" class="image-mapper-shape"/></a>
+    <a href="block/histo/1.pdf" target="_blank"><rect x="253" y="1403" width="114" height="438" class="image-mapper-shape"/></a>
+    <a href="block/physio/2.pdf" target="_blank"><rect x="484" y="314" width="113" height="459" class="image-mapper-shape"/></a>
+    <a href="block/physio/3.pdf" target="_blank"><rect x="488" y="1838" width="108" height="441" class="image-mapper-shape"/></a>
+    <a href="block/pharma/1.pdf" target="_blank"><rect x="599" y="422" width="112" height="471" class="image-mapper-shape"/></a>
+    <a href="block/bio/1.pdf" target="_blank"><rect x="599" y="893" width="112" height="511" class="image-mapper-shape"/></a>
+</g>
+
+   <g transform="translate(1024,0)">
+        <image href="image/2.png" width="1024" height="2454" id="base-image-2"></image>
+    </g>
+    <g transform="translate(0,2454)">
+        <image href="image/3.png" width="1024" height="2454" id="base-image-3"></image>
+    </g>
+    <g transform="translate(1024,2454)">
+        <image href="image/4.png" width="1024" height="2454" id="base-image-4"></image>
+    </g>
+
+  <script>
+    const mainGroup = document.getElementById('main-group');
+    const clipDefs = document.getElementById('clip-defs');
+    let activeHover = null;
+    const ORIGINAL_IMAGE_HEIGHT = 2454;
+
+    function attachHover(rect, index) {
+      let zoomPart = null;
+      let clipPathId = `clip-${index}`;
+      let animationId = null;
+      const padding = 5;
+      const scale = 1.1;
+
+      rect.addEventListener('mousemove', e => {
+        const bbox = rect.getBoundingClientRect();
+        const mx = e.clientX - bbox.left;
+        const my = e.clientY - bbox.top;
+        if(mx < padding || mx > bbox.width - padding || my < padding || my > bbox.height - padding){
+          if(activeHover === rect) stopHover();
+          return;
+        }
+        if(activeHover && activeHover !== rect) stopHover();
+        if(activeHover === rect) return;
+        startHover();
+      });
+
+      rect.addEventListener('mouseleave', stopHover);
+
+      function startHover() {
+        activeHover = rect;
+        const x = parseFloat(rect.getAttribute('x'));
+        const y = parseFloat(rect.getAttribute('y'));
+        const width = parseFloat(rect.getAttribute('width'));
+        const height = parseFloat(rect.getAttribute('height'));
+
+        let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
+        clip.setAttribute('id', clipPathId);
+        let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        clipRect.setAttribute('x', x);
+        clipRect.setAttribute('y', y);
+        clipRect.setAttribute('width', width);
+        clipRect.setAttribute('height', height);
+        clip.appendChild(clipRect);
+        clipDefs.appendChild(clip);
+
+        zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
+        zoomPart.setAttribute('href','image/1.png');
+        zoomPart.setAttribute('width','1024');
+        zoomPart.setAttribute('height', ORIGINAL_IMAGE_HEIGHT);
+        zoomPart.setAttribute('class','zoom-part');
+        zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
+        zoomPart.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
+        zoomPart.style.opacity = 0;
+        mainGroup.appendChild(zoomPart);
+
+        rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
+        rect.style.transform = `scale(${scale})`;
+        zoomPart.style.transform = `scale(${scale})`;
+        zoomPart.style.opacity = 1;
+
+        let hue = 0;
+        animationId = setInterval(() => {
+          hue = (hue + 1) % 360;
+          const glow = `drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue+60)%360},100%,60%))`;
+          rect.style.filter = glow;
+          zoomPart.style.filter = glow;
+        }, 100);
+      }
+
+      function stopHover() {
+        if(!activeHover) return;
+        rect.style.transform = 'scale(1)';
+        rect.style.filter = 'none';
+        if(animationId) clearInterval(animationId);
+        if(zoomPart){ zoomPart.remove(); zoomPart = null; }
+        const existingClip = document.getElementById(clipPathId);
+        if(existingClip) existingClip.remove();
+        activeHover = null;
+      }
+    }
+
+    mainGroup.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));
+
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach((node, i) => {
+          if(node.tagName==='A'){
+            const rect = node.querySelector('rect.image-mapper-shape');
+            if(rect) attachHover(rect, Date.now()+i);
+          }
+        });
+      });
+    });
+    observer.observe(mainGroup,{childList:true, subtree:true});
+  </script>
+</body>
+</html>

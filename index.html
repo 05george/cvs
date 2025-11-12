@@ -71,7 +71,7 @@
     const clipDefs = document.getElementById('clip-defs');
     let activeHover = null;
     const ORIGINAL_IMAGE_HEIGHT = 2454; 
-    const HOLD_DURATION = 500; // 500 ملي ثانية للضغط المطول
+    const HOLD_DURATION = 500; // مدة الضغط المطول بالمللي ثانية
 
     function attachHover(rect, index) {
       let zoomPart = null;
@@ -79,6 +79,7 @@
       let animationId = null;
       let holdTimer = null; 
       let hoverStarted = false; 
+      let isTouch = false; // فلاج لتحديد إذا كان التفاعل عن طريق اللمس
 
       const parentGroup = rect.closest('g');
       const baseImage = parentGroup ? parentGroup.querySelector('.base-image') : null;
@@ -132,7 +133,6 @@
         const transformOriginY = y + height/2 + offsetY;
 
         zoomPart.style.transformOrigin = `${transformOriginX}px ${transformOriginY}px`;
-
         zoomPart.style.opacity = 0;
 
         rect.ownerSVGElement.appendChild(zoomPart); 
@@ -164,62 +164,75 @@
         const existingClip = document.getElementById(clipPathId);
         if(existingClip) existingClip.remove();
         activeHover = null;
-        // hoverStarted = false; // لا يجب إعادة تعيينها هنا
       }
 
       const anchor = rect.closest('a'); 
 
       const handlePress = (e) => {
+        // لو الـ Press اتكرر لنفس العنصر أثناء عمل الـ hover، نتجاهله
+        if(holdTimer || hoverStarted) return;
+        
+        // منع فتح الرابط الافتراضي للتحكم في توقيته
         e.preventDefault(); 
         
+        // لو في عنصر تاني معموله Hover، نوقفه
         if (activeHover && activeHover !== rect) stopHover(activeHover);
 
+        // تحديد ما إذا كان التفاعل لمسًا
+        isTouch = (e.type === 'touchstart');
+
+        // بدأ مؤقت الضغط المطول
         holdTimer = setTimeout(() => {
+          // لو المؤقت خلص بدون ما يتلغي (يعني كان ضغط مطول)
           startHover();
           holdTimer = null;
         }, HOLD_DURATION);
-
-        if (e.type === 'mousedown') {
-            rect.addEventListener('mouseup', handleRelease, {once: true});
-        }
       };
 
       const handleRelease = (e) => {
+        // لو الـ Release اتعمل قبل ما الـ Hover يبدأ
         if(holdTimer){
           clearTimeout(holdTimer);
           holdTimer = null;
-          // ضغطة سريعة
+          // ضغطة سريعة -> نفتح الرابط
           if (anchor && !hoverStarted) {
             window.open(anchor.href, anchor.target || '_self');
           }
         } else if (hoverStarted) {
-          // ضغطة مطولة (الـ Hover اشتغل)
+          // ضغطة مطولة (الـ Hover اشتغل) -> نفتح الرابط ونوقف الـ Hover
           if (anchor) {
             window.open(anchor.href, anchor.target || '_self');
           }
           stopHover();
         }
-        // إعادة تعيين حالة الـ hoverStarted بعد التعامل مع الضغطة
+        
+        // إعادة تعيين حالة الـ hoverStarted للبدء من جديد
         hoverStarted = false; 
+        isTouch = false;
       };
 
-      const handleCancel = () => {
-        if(holdTimer){
-          clearTimeout(holdTimer);
-          holdTimer = null;
+      const handleCancel = (e) => {
+        // نتاكد ان الـ cancel جه من لمسة سابقة عشان ما يتعارضش مع الـ mouseleave
+        if (e.type === 'touchcancel' || (e.type === 'mouseleave' && !isTouch)) {
+            if(holdTimer){
+              clearTimeout(holdTimer);
+              holdTimer = null;
+            }
+            stopHover();
+            hoverStarted = false; 
+            isTouch = false;
         }
-        stopHover();
-        hoverStarted = false; // إعادة تعيين في حالة الإلغاء
       };
       
+      // ربط أحداث اللمس (للموبايل)
       rect.addEventListener('touchstart', handlePress, {passive: false});
       rect.addEventListener('touchend', handleRelease);
       rect.addEventListener('touchcancel', handleCancel);
 
+      // ربط أحداث الماوس (للكمبيوتر)
       rect.addEventListener('mousedown', handlePress, {passive: false});
+      rect.addEventListener('mouseup', handleRelease);
       rect.addEventListener('mouseleave', handleCancel);
-      
-      // لازم نلغي أي سلوك للـ mousemove و mouseleave عشان ما يتعارضوش مع الـ touch
     }
 
     // لِف على كل الـ groups وخد منهم كل الـ rects اللي ليها class='image-mapper-shape'

@@ -1,71 +1,104 @@
-<svg style="height=100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 2048 4908" style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet">
-<style>
-  .image-mapper-shape {
-    fill: rgba(0, 0, 0, 0);
-    stroke: yellow;
-    stroke-width: 2px;
-  }
-  #red.image-mapper-shape {
-    stroke: red !important;
-    stroke-width: 2px !important;
-  }
-</style>
-        <image xlink:href="image/1.png"></image> 
-        
-<a xlink:href="block/physio/1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="254" y="423" width="114" height="467" class="image-mapper-shape" data-index="1"></rect>
-</g>
-</a>
-<a xlink:href="block/histo/1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="253" y="1403" width="114" height="438" class="image-mapper-shape" data-index="2"></rect>
-</g>
-</a>
-<a xlink:href="block/physio/2.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="484" y="314" width="113" height="459" class="image-mapper-shape" data-index="3"></rect>
-</g>
-</a>
-<a xlink:href="block/physio/3.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="488" y="1838" width="108" height="441" class="image-mapper-shape" data-index="4"></rect>
-</g>
-</a>
-<a xlink:href="block/pharma/1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="599" y="422" width="112" height="471" class="image-mapper-shape" data-index="5"></rect>
-</g>
-</a>
-<a xlink:href="block/bio/1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="599" y="893" width="112" height="511" class="image-mapper-shape selected" data-index="6"></rect>
-</g>
-</a>
-<a xlink:href="block/patho/s1.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="3440" y="653.9228070175438" width="113.77777777777777" height="348.5192982456141" class="image-mapper-shape" data-index="1"></rect>
-</g>
-</a>
-<a xlink:href="block/patho/3.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="3440" y="1363" width="113.77777777777777" height="517.3894736842105" class="image-mapper-shape selected" data-index="2"></rect>
-</g>
-</a>
-<a xlink:href="block/physio/10.pdf" target="_blank" xlink:title="">
-<g>
-<rect x="3440" y="1880.685964912281" width="116.38757309941519" height="315.82397660818674" class="image-mapper-shape selected" data-index="1"></rect>
-</g>
-</a>
-<g transform="translate(1024,0)">
-        <image xlink:href="image/2.png"></image>
-</g>
-<g transform="translate(0,2454)">
-        <image xlink:href="image/3.png"></image>
-</g>
-<g transform="translate(1024,2454)">
-        <image xlink:href="image/4.png"></image>
-</g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 2454" preserveAspectRatio="xMidYMid meet"
+     style="max-width:100vw; max-height:100vh; width:auto; height:auto; display:block; background:black;">
+  <g transform="translate(0,0)" id="main-group">
+    <!-- الصور الأصلية -->
+    <image href="image/1.png" width="1024"/>
+
+    <!-- كل الروابط والمربعات كما كانت -->
+    <a href="micro/1.pdf" target="_blank">
+      <rect x="368" y="703" width="115" height="380" class="image-mapper-shape"/>
+    </a>
+
+    <a href="patho/1.pdf" target="_blank">
+      <rect x="368" y="1083" width="115" height="253.5" class="image-mapper-shape"/>
+    </a>
+
+    <a href="patho/q1.pdf" target="_blank">
+      <rect x="368" y="1339" width="115" height="125" id="red" class="image-mapper-shape"/>
+    </a>
+
+    <a href="physio/2.pdf" target="_blank">
+      <rect x="368" y="1465" width="115" height="380" class="image-mapper-shape"/>
+    </a>
+
+    <a href="anatomy/1.pdf" target="_blank">
+      <rect x="368" y="1845" width="115" height="380" class="image-mapper-shape"/>
+    </a>
+
+    <a href="physio/1.pdf" target="_blank">
+      <rect x="598" y="366" width="114.5" height="315" class="image-mapper-shape"/>
+    </a>
+
+    <a href="#" target="_blank">
+      <rect x="712.35" y="702" width="115" height="380" class="image-mapper-shape"/>
+    </a>
+
+    <a href="#" target="_blank">
+      <rect x="712.35" y="1465" width="115" height="380" class="image-mapper-shape"/>
+    </a>
+
+    <a href="physio/2.pdf" target="_blank">
+      <rect x="598" y="1846" width="115" height="380" class="image-mapper-shape"/>
+    </a>
+  </g>
+
+  <!-- نسخة الصورة المكبرة فوق المربعات -->
+  <image id="zoom-image" href="image/1.png" width="1024" style="pointer-events:none; transform-origin: top left; transition: transform 0.3s ease, filter 0.3s ease;"/>
+
+  <style>
+    .image-mapper-shape {
+      fill: transparent;
+      stroke: yellow;
+      stroke-width: 2px;
+      transition: stroke 0.2s ease;
+    }
+    .image-mapper-shape#red { stroke: red; }
+    a:hover .image-mapper-shape { stroke: orange; }
+  </style>
+
+  <script>
+    const zoomImage = document.getElementById('zoom-image');
+    const mainGroup = document.getElementById('main-group');
+
+    function attachHoverEffect(rect) {
+      rect.addEventListener('mouseenter', () => {
+        const x = parseFloat(rect.getAttribute('x'));
+        const y = parseFloat(rect.getAttribute('y'));
+        const width = parseFloat(rect.getAttribute('width'));
+        const height = parseFloat(rect.getAttribute('height'));
+
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+
+        const scale = 1.1; // تكبير خفيف
+        const tx = -cx * (scale - 1);
+        const ty = -cy * (scale - 1);
+
+        zoomImage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+        zoomImage.style.filter = 'drop-shadow(0 0 8px orange)';
+      });
+
+      rect.addEventListener('mouseleave', () => {
+        zoomImage.style.transform = 'translate(0,0) scale(1)';
+        zoomImage.style.filter = 'none';
+      });
+    }
+
+    // تطبيق التأثير على كل المربعات الحالية
+    mainGroup.querySelectorAll('.image-mapper-shape').forEach(attachHoverEffect);
+
+    // مراقبة أي مربعات جديدة تُضاف تلقائيًا
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node.tagName === 'A') {
+            const rect = node.querySelector('rect.image-mapper-shape');
+            if (rect) attachHoverEffect(rect);
+          }
+        });
+      });
+    });
+
+    observer.observe(mainGroup, { childList: true, subtree: true });
+  </script>
 </svg>
-
-

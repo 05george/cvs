@@ -76,7 +76,7 @@
       let zoomPart = null;
       let clipPathId = `clip-${index}`;
       let animationId = null;
-      const padding = 5;
+      const padding = 5; // هذا لم يعد مستخدمًا بشكل أساسي للماوس ولكن يمكن الاحتفاظ به
       const scale = 1.1;
 
       const parentGroup = rect.closest('g');
@@ -98,23 +98,28 @@
         }
       }
 
-      rect.addEventListener('mousemove', e => {
-        const bbox = rect.getBoundingClientRect();
-        const mx = e.clientX - bbox.left;
-        const my = e.clientY - bbox.top;
-        if(mx < padding || mx > bbox.width - padding || my < padding || my > bbox.height - padding){
-          if(activeHover === rect) stopHover();
-          return;
-        }
-        if(activeHover && activeHover !== rect) stopHover();
-        if(activeHover === rect) return;
-        startHover();
-      });
+      // **إيفنتات اللمس (Touch Events): عشان يشتغل بالصابع**
+      // لما تضغط بصباعك (كأنها mouseenter)
+      rect.addEventListener('touchstart', (e) => {
+        // منع الـ scrolling التلقائي عشان المستطيل ياخد اللمسة
+        e.preventDefault(); 
+        if(activeHover && activeHover !== rect) stopHover(); 
+        startHover(); 
+      }, {passive: false});
 
+      // لما تشيل صباعك أو اللمسة تتلغي (كأنها mouseleave)
+      rect.addEventListener('touchend', stopHover);
+      rect.addEventListener('touchcancel', stopHover);
+      
+      // **إيفنتات الماوس (Mouse Events): بنخليها زي ما هي عشان الـ PC**
+      rect.addEventListener('mouseenter', startHover);
       rect.addEventListener('mouseleave', stopHover);
 
+
       function startHover() {
+        if(activeHover === rect) return; // عشان منعشغلش الـ hover مرتين لو حصل touchstart و mouseenter ورا بعض
         activeHover = rect;
+
         const x = parseFloat(rect.getAttribute('x'));
         const y = parseFloat(rect.getAttribute('y'));
         const width = parseFloat(rect.getAttribute('width'));
@@ -137,26 +142,26 @@
         zoomPart.setAttribute('height', imageHeight);
         zoomPart.setAttribute('class','zoom-part');
         zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
-        
+
         // 2. الـ zoomPart بيتحط في مكانه بالـ x و y (إزاحة الـ Group) عشان يتطابق مع الصورة الأصلية
         zoomPart.setAttribute('x', offsetX);
         zoomPart.setAttribute('y', offsetY);
-        
+
         // 3. نقطة الـ Transform Origin لازم تكون في الإحداثيات الكلية للـ SVG
         const transformOriginX = x + width/2 + offsetX;
         const transformOriginY = y + height/2 + offsetY;
-        
+
         zoomPart.style.transformOrigin = `${transformOriginX}px ${transformOriginY}px`;
-        
+
         zoomPart.style.opacity = 0;
-        
+
         // الـ zoomPart بيضاف للـ SVG مباشرة عشان الـ Clip Path يشتغل
         rect.ownerSVGElement.appendChild(zoomPart); 
 
         // الـ rect (المستطيل الشفاف) بيعمل zoom من مكانه داخل الـ group
         rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
         rect.style.transform = `scale(${scale})`;
-        
+
         // تطبيق الـ scale على الـ zoomPart
         zoomPart.style.transform = `scale(${scale})`;
         zoomPart.style.opacity = 1;
@@ -186,7 +191,7 @@
     allGroups.forEach(group => {
         group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i + Date.now()));
     });
-    
+
     // لِف على كل الـ groups عشان الـ Observer يراقبهم كلهم لو ضفت روابط جديدة
     allGroups.forEach(group => {
         const observer = new MutationObserver(mutations => {

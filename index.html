@@ -76,10 +76,10 @@
       let zoomPart = null;
       let clipPathId = `clip-${index}`;
       let animationId = null;
+      const padding = 5;
       const scale = 1.1;
 
       const parentGroup = rect.closest('g');
-      const linkA = rect.closest('a'); // **جلب عنصر الرابط (<a>)**
       // بنجيب مسار الصورة وأبعادها
       const baseImage = parentGroup ? parentGroup.querySelector('.base-image') : null;
       const imageURL = baseImage ? baseImage.getAttribute('data-image-url') : 'image/1.png';
@@ -98,43 +98,23 @@
         }
       }
 
-      // **إيفنتات اللمس (Touch Events): لعمل الـ Hover ثم فتح الرابط**
-      rect.addEventListener('touchstart', (e) => {
-        // e.preventDefault(); 
-        if(activeHover && activeHover !== rect) stopHover(); 
-        startHover(); 
-      }, {passive: false});
-
-      rect.addEventListener('touchend', (e) => {
-          // **نلغي الديفولت عشان نتحكم في فتح الرابط**
-          e.preventDefault(); 
-          
-          // نلغي الـ Hover بعد تأخير (500 مللي ثانية)
-          setTimeout(stopHover, 500); 
-          
-          if (linkA) {
-              // **فتح الرابط يدويًا بالـ JavaScript**
-              if (linkA.target === '_blank') {
-                window.open(linkA.href, '_blank');
-              } else {
-                window.location.href = linkA.href;
-              }
-          }
+      rect.addEventListener('mousemove', e => {
+        const bbox = rect.getBoundingClientRect();
+        const mx = e.clientX - bbox.left;
+        const my = e.clientY - bbox.top;
+        if(mx < padding || mx > bbox.width - padding || my < padding || my > bbox.height - padding){
+          if(activeHover === rect) stopHover();
+          return;
+        }
+        if(activeHover && activeHover !== rect) stopHover();
+        if(activeHover === rect) return;
+        startHover();
       });
-      rect.addEventListener('touchcancel', stopHover);
 
-      // **إيفنتات الماوس (Mouse Events): للـ PC**
-      rect.addEventListener('mouseenter', startHover); // الـ Hover هيظهر لما تدخل بالماوس
-      rect.addEventListener('mouseleave', stopHover); // الـ Hover هيختفي لما تطلع بالماوس
-
-      // الـ Click بتاع الماوس هيفتح الرابط طبيعي وهنخلي الـ Hover يختفي
-      rect.addEventListener('click', stopHover);
-
+      rect.addEventListener('mouseleave', stopHover);
 
       function startHover() {
-        if(activeHover === rect) return; 
         activeHover = rect;
-
         const x = parseFloat(rect.getAttribute('x'));
         const y = parseFloat(rect.getAttribute('y'));
         const width = parseFloat(rect.getAttribute('width'));
@@ -143,7 +123,7 @@
         let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
         clip.setAttribute('id', clipPathId);
         let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-        // 1. Clip Path بيشتغل على الإحداثيات الكلية
+        // 1. Clip Path بيشتغل على الإحداثيات الكلية (إحداثيات المستطيل + إزاحة الـ Group)
         clipRect.setAttribute('x', x + offsetX); 
         clipRect.setAttribute('y', y + offsetY); 
         clipRect.setAttribute('width', width);
@@ -158,11 +138,11 @@
         zoomPart.setAttribute('class','zoom-part');
         zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
 
-        // 2. الـ zoomPart بيتحط في مكانه
+        // 2. الـ zoomPart بيتحط في مكانه بالـ x و y (إزاحة الـ Group) عشان يتطابق مع الصورة الأصلية
         zoomPart.setAttribute('x', offsetX);
         zoomPart.setAttribute('y', offsetY);
 
-        // 3. نقطة الـ Transform Origin
+        // 3. نقطة الـ Transform Origin لازم تكون في الإحداثيات الكلية للـ SVG
         const transformOriginX = x + width/2 + offsetX;
         const transformOriginY = y + height/2 + offsetY;
 
@@ -170,10 +150,10 @@
 
         zoomPart.style.opacity = 0;
 
-        // الـ zoomPart بيضاف للـ SVG مباشرة
+        // الـ zoomPart بيضاف للـ SVG مباشرة عشان الـ Clip Path يشتغل
         rect.ownerSVGElement.appendChild(zoomPart); 
 
-        // الـ rect (المستطيل الشفاف) بيعمل zoom 
+        // الـ rect (المستطيل الشفاف) بيعمل zoom من مكانه داخل الـ group
         rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
         rect.style.transform = `scale(${scale})`;
 

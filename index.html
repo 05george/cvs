@@ -39,7 +39,7 @@ svg {
   <defs id="clip-defs"></defs>
 
   <g id="group-1" transform="translate(0,0)">
-    <image href="image/1.png" width="1024" height="2454" data-image-url="image/1.png" class="base-image"/>
+    <image href="image/1.png" width="1024" height="2454" class="base-image"/>
     <a href="block/physio/1.pdf" target="_blank"><rect x="254" y="423" width="114" height="467" class="image-mapper-shape"/></a>
     <a href="block/histo/1.pdf" target="_blank"><rect x="253" y="1403" width="114" height="438" class="image-mapper-shape"/></a>
     <a href="block/physio/2.pdf" target="_blank"><rect x="484" y="314" width="113" height="459" class="image-mapper-shape"/></a>
@@ -49,15 +49,15 @@ svg {
   </g>
 
   <g id="group-2" transform="translate(1024,0)">
-    <image href="image/2.png" width="1024" height="2454" data-image-url="image/2.png" class="base-image"/>
+    <image href="image/2.png" width="1024" height="2454" class="base-image"/>
   </g>
 
   <g id="group-3" transform="translate(0,2454)">
-    <image href="image/3.png" width="1024" height="2454" data-image-url="image/3.png" class="base-image"/>
+    <image href="image/3.png" width="1024" height="2454" class="base-image"/>
   </g>
 
   <g id="group-4" transform="translate(1024,2454)">
-    <image href="image/4.png" width="1024" height="2454" data-image-url="image/4.png" class="base-image"/>
+    <image href="image/4.png" width="1024" height="2454" class="base-image"/>
   </g>
 </svg>
 
@@ -82,6 +82,11 @@ document.querySelectorAll('.image-mapper-shape').forEach((rect, index) => {
   const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
   if (match) { offsetX = parseFloat(match[1]); offsetY = parseFloat(match[2]); }
 
+  // === أحداث الفأرة ===
+  rect.addEventListener('mouseenter', startHover);
+  rect.addEventListener('mouseleave', stopHover);
+
+  // === أحداث اللمس ===
   rect.addEventListener('touchstart', e => {
     e.preventDefault();
     touchTimer = setTimeout(() => startHover(), 0); // delay 0
@@ -101,7 +106,9 @@ document.querySelectorAll('.image-mapper-shape').forEach((rect, index) => {
 
   rect.addEventListener('touchcancel', stopHover);
 
+  // === دوال التفاعل ===
   function startHover() {
+    if (activeHover === rect) return;
     activeHover = rect;
     const x = parseFloat(rect.getAttribute('x'));
     const y = parseFloat(rect.getAttribute('y'));

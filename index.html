@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>خريطة تفاعلية نظيفة</title>
   <style>
-    /* ... (CSS Style Code is UNCHANGED) ... */
+
     html, body {
       margin: 0;
       padding: 0;
@@ -59,21 +59,19 @@
     <script>
       const mainGroup = document.getElementById('main-group');
       const clipDefs = document.getElementById('clip-defs');
+      // activeHover دلوقتي بيمسك العنصر اللي عليه الهافر حالياً لضمان عدم تشغيل 2 هافر
       let activeHover = null; 
       const ORIGINAL_IMAGE_HEIGHT = 2454;
 
-      // دالة مساعدة لإيجاد عنصر الـ zoomPart المرتبط بـ rect
-      function getZoomPart(rect) {
-          const clipId = `clip-${rect.getAttribute('data-index')}`;
-          return mainGroup.querySelector(`.zoom-part[clip-path="url(#${clipId})"]`);
-      }
-
       function attachHover(rect, i) {
-        // بنحط index عشان نعرف نلاقي الـ clip path والـ zoom part لما نعمل stopHover على عنصر تاني
+        // متغيرات داخلية خاصة بالـ rect ده بس
+        let zoomPart = null;
+        let animationId = null;
+        const clipPathId = `clip-${i}`;
+        const scale = 1.1;
+
+        // بنحط index عشان نقدر نلاقي الـ clip path لو احتاجنا
         rect.setAttribute('data-index', i); 
-        
-        // متغير داخلي لحفظ ID الأنميشن الخاص بهذا العنصر فقط
-        let currentAnimationId = null;
 
         // 🛑 أحداث الماوس
         rect.addEventListener('mouseover', startHover);
@@ -81,8 +79,9 @@
         
         // 🛑 أحداث اللمس
         rect.addEventListener('touchstart', (e) => {
-          // 🛑 التأكد من إيقاف الهافر الحالي قبل البدء
+          // 🛑 إيقاف الهافر الحالي لو كان شغال على عنصر تاني
           if(activeHover && activeHover !== rect) {
+              // بنوقف الهافر السابق عن طريق استدعاء stopHover عليه
               stopHover({target: activeHover});
           }
           if(activeHover === rect) return;
@@ -94,26 +93,21 @@
 
         function startHover() {
           
-          // 🛑 التأكيد الأخير: إيقاف الهافر السابق إذا كان شغال
-          if(activeHover && activeHover !== rect) {
-             stopHover({target: activeHover});
-          }
           if(activeHover === rect) return;
             
+          // تنظيف أي بقايا من محاولات سابقة على نفس العنصر
+          stopHover({target: rect}); 
+
           activeHover = rect;
           
           const x = parseFloat(rect.getAttribute('x'));
           const y = parseFloat(rect.getAttribute('y'));
           const width = parseFloat(rect.getAttribute('width'));
           const height = parseFloat(rect.getAttribute('height'));
-          const scale = 1.1;
-
-          // إزالة أي remnants من محاولات سابقة
-          stopHover({target: rect}); 
 
           // إنشاء Clip Path
           let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
-          clip.setAttribute('id', `clip-${i}`);
+          clip.setAttribute('id', clipPathId);
           let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
           clipRect.setAttribute('x', x);
           clipRect.setAttribute('y', y);
@@ -123,12 +117,12 @@
 
 
           // إنشاء الجزء المكبر
-          let zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
+          zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
           zoomPart.setAttribute('href','image/1.png');
           zoomPart.setAttribute('width','1024');
           zoomPart.setAttribute('height', ORIGINAL_IMAGE_HEIGHT);
           zoomPart.setAttribute('class','zoom-part');
-          zoomPart.setAttribute('clip-path', `url(#clip-${i})`);
+          zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
           zoomPart.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
           zoomPart.style.opacity = 0;
           mainGroup.appendChild(zoomPart);
@@ -139,48 +133,49 @@
           zoomPart.style.transform = `scale(${scale})`;
           zoomPart.style.opacity = 1;
 
-          // 🛑 تشغيل الأنميشن وحفظ ID الخاص بيه
+          // 🛑 تشغيل الأنميشن وحفظ ID الخاص بيه في المتغير الداخلي
           let hue = 0;
-          currentAnimationId = setInterval(() => {
+          animationId = setInterval(() => {
             hue = (hue + 1) % 360;
             const glow = `drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue+60)%360},100%,60%))`;
             rect.style.filter = glow;
-            zoomPart.style.filter = glow;
+            if(zoomPart) zoomPart.style.filter = glow;
           }, 100);
         }
 
         // 🛑 دالة الإيقاف لضمان إغلاق الهافر
         function stopHover(e) {
-          // تحديد العنصر المستهدف للإيقاف
+          // تحديد العنصر المستهدف للإيقاف. لو مافيش e (زي في حالة استدعاء داخلي)، بنستخدم rect
           const targetRect = e ? (e.target.tagName === 'rect' ? e.target : e.target.closest('a')?.querySelector('.image-mapper-shape')) : rect;
           
           if(!targetRect) return;
 
+          // ** التأكد من أننا بنوقف الهافر اللي يخص المتغيرات دي
+          if (targetRect !== rect) {
+              // لو العنصر المستهدف مختلف، لازم نشوف لو هو الـ activeHover ونوقفه
+              if(activeHover === targetRect) activeHover = null; 
+              return; // بنسيب التنظيف على دالة attachHover الأصلية بتاعة العنصر المستهدف
+          }
+
           // 🛑 إيقاف الأنميشن باستخدام ID الخاص بيه
-          clearInterval(targetRect._animationId);
-          targetRect._animationId = null;
+          if(animationId) clearInterval(animationId);
+          animationId = null; 
 
           // إعادة التعيين
-          targetRect.style.transform = 'scale(1)';
-          targetRect.style.filter = 'none';
+          rect.style.transform = 'scale(1)';
+          rect.style.filter = 'none';
           
           // إزالة الـ zoom part والـ clip path
-          const targetZoomPart = getZoomPart(targetRect);
-          const targetClip = document.getElementById(`clip-${targetRect.getAttribute('data-index')}`);
-
-          if(targetZoomPart){ targetZoomPart.remove(); }
-          if(targetClip) targetClip.remove();
+          if(zoomPart){ zoomPart.remove(); zoomPart = null; }
+          
+          const currentClip = document.getElementById(clipPathId);
+          if(currentClip) currentClip.remove();
           
           // 🛑 مسح الـ activeHover لو كان هو العنصر ده
-          if(activeHover === targetRect) {
+          if(activeHover === rect) {
               activeHover = null;
           }
         }
-        
-        // ربط الـ animationId بالعنصر عشان نقدر نلاقيه وقت الإيقاف
-        rect.addEventListener('startHover', (e) => {
-            rect._animationId = currentAnimationId;
-        });
       }
 
       mainGroup.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));

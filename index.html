@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>خريطة تفاعلية محسّنة</title>
+<title>خريطة تفاعلية صحيحة</title>
 <style>
 html, body {
   margin: 0;
@@ -31,93 +31,42 @@ svg {
 }
 .zoom-part {
   pointer-events: none;
-  transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
-  will-change: transform, filter, opacity;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 </style>
 </head>
 <body>
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 4908" preserveAspectRatio="xMidYMid meet">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 2454" preserveAspectRatio="xMidYMid meet">
   <defs id="clip-defs"></defs>
-
-  <g id="group-1" transform="translate(0,0)">
+  <g id="main-group">
     <image href="image/1.png" width="1024" height="2454" class="base-image"/>
-    <a href="block/physio/1.pdf" target="_blank"><rect x="254" y="423" width="114" height="467" class="image-mapper-shape"/></a>
-    <a href="block/histo/1.pdf" target="_blank"><rect x="253" y="1403" width="114" height="438" class="image-mapper-shape"/></a>
-    <a href="block/physio/2.pdf" target="_blank"><rect x="484" y="314" width="113" height="459" class="image-mapper-shape"/></a>
-    <a href="block/pharma/1.pdf" target="_blank"><rect x="599" y="422" width="112" height="471" class="image-mapper-shape"/></a>
-    <a href="block/physio/3.pdf" target="_blank"><rect x="488" y="1838" width="108" height="441" class="image-mapper-shape"/></a>
-    <a href="block/bio/1.pdf" target="_blank"><rect x="599" y="893" width="112" height="511" class="image-mapper-shape"/></a>
-  </g>
-
-  <g id="group-2" transform="translate(1024,0)">
-    <image href="image/2.png" width="1024" height="2454" class="base-image"/>
-  </g>
-
-  <g id="group-3" transform="translate(0,2454)">
-    <image href="image/3.png" width="1024" height="2454" class="base-image"/>
-  </g>
-
-  <g id="group-4" transform="translate(1024,2454)">
-    <image href="image/4.png" width="1024" height="2454" class="base-image"/>
+    <a href="block/physio/1.pdf" target="_blank"><rect x="368" y="703" width="115" height="380" class="image-mapper-shape"/></a>
+    <a href="block/histo/1.pdf" target="_blank"><rect x="368" y="1083" width="115" height="253.5" class="image-mapper-shape"/></a>
+    <a href="block/physio/2.pdf" target="_blank"><rect x="368" y="1465" width="115" height="380" class="image-mapper-shape"/></a>
   </g>
 </svg>
 
 <script>
 const clipDefs = document.getElementById('clip-defs');
-let activeHover = null;
+const mainGroup = document.getElementById('main-group');
 
 document.querySelectorAll('.image-mapper-shape').forEach((rect, index) => {
   let zoomPart = null;
-  let clipPathId = `clip-${index}`;
-  let animationId = null;
+  let clipId = `clip-${index}`;
   const scale = 1.1;
-  let touchTimer = null;
 
-  const parentGroup = rect.closest('g');
-  const baseImage = parentGroup.querySelector('.base-image');
-  const imageURL = baseImage.getAttribute('href');
-  const imageWidth = parseFloat(baseImage.getAttribute('width'));
-  const imageHeight = parseFloat(baseImage.getAttribute('height'));
-  const transform = parentGroup.getAttribute('transform') || '';
-
-  // === أحداث الفأرة ===
-  rect.addEventListener('mouseenter', startHover);
-  rect.addEventListener('mouseleave', stopHover);
-
-  // === أحداث اللمس ===
-  rect.addEventListener('touchstart', e => {
-    e.preventDefault();
-    touchTimer = setTimeout(() => startHover(), 0); // delay 0
-  }, { passive: false });
-
-  rect.addEventListener('touchend', e => {
-    if (touchTimer) clearTimeout(touchTimer);
-    if (!activeHover) {
-      const link = rect.closest('a');
-      if (link) window.open(link.href, link.target || '_self');
-      return;
-    }
-    stopHover();
-    const link = rect.closest('a');
-    if (link) window.open(link.href, link.target || '_self');
-  });
-
-  rect.addEventListener('touchcancel', stopHover);
-
-  // === دوال التفاعل ===
   function startHover() {
-    if (activeHover === rect) return;
-    activeHover = rect;
+    if (zoomPart) return;
     const x = parseFloat(rect.getAttribute('x'));
     const y = parseFloat(rect.getAttribute('y'));
     const width = parseFloat(rect.getAttribute('width'));
     const height = parseFloat(rect.getAttribute('height'));
 
-    const clip = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
-    clip.setAttribute('id', clipPathId);
-    const clipRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    // إنشاء clipPath
+    const clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
+    clip.setAttribute('id', clipId);
+    const clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
     clipRect.setAttribute('x', x);
     clipRect.setAttribute('y', y);
     clipRect.setAttribute('width', width);
@@ -125,40 +74,46 @@ document.querySelectorAll('.image-mapper-shape').forEach((rect, index) => {
     clip.appendChild(clipRect);
     clipDefs.appendChild(clip);
 
-    zoomPart = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-    zoomPart.setAttribute('href', imageURL);
-    zoomPart.setAttribute('width', imageWidth);
-    zoomPart.setAttribute('height', imageHeight);
-    zoomPart.setAttribute('class', 'zoom-part');
-    zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
-    zoomPart.setAttribute('transform', transform);
-    zoomPart.style.transformOrigin = `${x + width / 2}px ${y + height / 2}px`;
+    // إنشاء صورة الزوم
+    zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
+    zoomPart.setAttribute('href','image/1.png');
+    zoomPart.setAttribute('width','1024');
+    zoomPart.setAttribute('height','2454');
+    zoomPart.setAttribute('class','zoom-part');
+    zoomPart.setAttribute('clip-path', `url(#${clipId})`);
+    zoomPart.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
+    zoomPart.style.transform = `scale(${scale})`;
     zoomPart.style.opacity = 1;
 
-    parentGroup.appendChild(zoomPart); // ✅ التصحيح هنا
+    mainGroup.appendChild(zoomPart);
 
-    rect.style.transformOrigin = `${x + width / 2}px ${y + height / 2}px`;
+    rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
     rect.style.transform = `scale(${scale})`;
-
-    let hue = 0;
-    animationId = setInterval(() => {
-      hue = (hue + 1) % 360;
-      const glow = `drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue + 60) % 360},100%,60%))`;
-      rect.style.filter = glow;
-      zoomPart.style.filter = glow;
-    }, 100);
   }
 
   function stopHover() {
-    if (!activeHover) return;
     rect.style.transform = 'scale(1)';
-    rect.style.filter = 'none';
-    if (animationId) clearInterval(animationId);
     if (zoomPart) zoomPart.remove();
-    const existingClip = document.getElementById(clipPathId);
+    const existingClip = document.getElementById(clipId);
     if (existingClip) existingClip.remove();
-    activeHover = null;
+    zoomPart = null;
   }
+
+  // ماوس
+  rect.addEventListener('mouseenter', startHover);
+  rect.addEventListener('mouseleave', stopHover);
+
+  // لمس
+  rect.addEventListener('touchstart', e => {
+    e.preventDefault();
+    startHover();
+  }, {passive:false});
+
+  rect.addEventListener('touchend', e => {
+    stopHover();
+    const link = rect.closest('a');
+    if(link) window.open(link.href, link.target || '_self');
+  });
 });
 </script>
 

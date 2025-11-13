@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>خريطة تفاعلية صحيحة</title>
+<title>خريطة تفاعلية سريعة</title>
 <style>
 html, body {
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   background: black;
   height: 100vh;
   overflow: hidden;
@@ -15,46 +14,50 @@ html, body {
   justify-content: center;
   align-items: flex-start;
 }
-svg {
-  display: block;
-  height: 100%;
-  width: auto;
-}
+svg { display: block; height: 100%; width: auto; }
 .image-mapper-shape {
   fill: transparent;
   stroke: yellow;
   stroke-width: 2px;
-  transform-origin: center center;
-  transition: transform 0.3s ease, filter 0.3s ease;
-  pointer-events: all;
   cursor: pointer;
+  transform-origin: center center;
+  transition: transform 0.3s ease;
 }
 .zoom-part {
   pointer-events: none;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, filter 0.3s ease;
 }
 </style>
 </head>
 <body>
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 2454" preserveAspectRatio="xMidYMid meet">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 4908" preserveAspectRatio="xMidYMid meet">
   <defs id="clip-defs"></defs>
-  <g id="main-group">
+
+  <g id="group-1">
     <image href="image/1.png" width="1024" height="2454" class="base-image"/>
-    <a href="block/physio/1.pdf" target="_blank"><rect x="368" y="703" width="115" height="380" class="image-mapper-shape"/></a>
-    <a href="block/histo/1.pdf" target="_blank"><rect x="368" y="1083" width="115" height="253.5" class="image-mapper-shape"/></a>
-    <a href="block/physio/2.pdf" target="_blank"><rect x="368" y="1465" width="115" height="380" class="image-mapper-shape"/></a>
+    <a href="block/physio/1.pdf" target="_blank"><rect x="254" y="423" width="114" height="467" class="image-mapper-shape"/></a>
+    <a href="block/histo/1.pdf" target="_blank"><rect x="253" y="1403" width="114" height="438" class="image-mapper-shape"/></a>
   </g>
 </svg>
 
 <script>
 const clipDefs = document.getElementById('clip-defs');
-const mainGroup = document.getElementById('main-group');
 
-document.querySelectorAll('.image-mapper-shape').forEach((rect, index) => {
+function attachHover(rect, baseImage) {
   let zoomPart = null;
-  let clipId = `clip-${index}`;
+  let clipId = `clip-${Date.now()}-${Math.random()}`;
+  let animationFrame = null;
+  let hue = 0;
   const scale = 1.1;
+
+  function updateGlow() {
+    hue = (hue + 2) % 360;
+    const glow = `drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue+60)%360},100%,60%))`;
+    rect.style.filter = glow;
+    if(zoomPart) zoomPart.style.filter = glow;
+    animationFrame = requestAnimationFrame(updateGlow);
+  }
 
   function startHover() {
     if (zoomPart) return;
@@ -63,7 +66,6 @@ document.querySelectorAll('.image-mapper-shape').forEach((rect, index) => {
     const width = parseFloat(rect.getAttribute('width'));
     const height = parseFloat(rect.getAttribute('height'));
 
-    // إنشاء clipPath
     const clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
     clip.setAttribute('id', clipId);
     const clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
@@ -74,46 +76,40 @@ document.querySelectorAll('.image-mapper-shape').forEach((rect, index) => {
     clip.appendChild(clipRect);
     clipDefs.appendChild(clip);
 
-    // إنشاء صورة الزوم
     zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
-    zoomPart.setAttribute('href','image/1.png');
-    zoomPart.setAttribute('width','1024');
-    zoomPart.setAttribute('height','2454');
-    zoomPart.setAttribute('class','zoom-part');
+    zoomPart.setAttribute('href', baseImage.getAttribute('href'));
+    zoomPart.setAttribute('width', baseImage.getAttribute('width'));
+    zoomPart.setAttribute('height', baseImage.getAttribute('height'));
     zoomPart.setAttribute('clip-path', `url(#${clipId})`);
     zoomPart.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
     zoomPart.style.transform = `scale(${scale})`;
-    zoomPart.style.opacity = 1;
+    rect.parentNode.appendChild(zoomPart);
 
-    mainGroup.appendChild(zoomPart);
-
-    rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
     rect.style.transform = `scale(${scale})`;
+    animationFrame = requestAnimationFrame(updateGlow);
   }
 
   function stopHover() {
     rect.style.transform = 'scale(1)';
-    if (zoomPart) zoomPart.remove();
+    rect.style.filter = 'none';
+    if(animationFrame) cancelAnimationFrame(animationFrame);
+    if(zoomPart) zoomPart.remove();
     const existingClip = document.getElementById(clipId);
-    if (existingClip) existingClip.remove();
+    if(existingClip) existingClip.remove();
     zoomPart = null;
   }
 
-  // ماوس
+  // Mouse
   rect.addEventListener('mouseenter', startHover);
   rect.addEventListener('mouseleave', stopHover);
+  // Touch
+  rect.addEventListener('touchstart', e => { e.preventDefault(); startHover(); }, {passive:false});
+  rect.addEventListener('touchend', e => { stopHover(); const link = rect.closest('a'); if(link) window.open(link.href, link.target||'_self'); });
+}
 
-  // لمس
-  rect.addEventListener('touchstart', e => {
-    e.preventDefault();
-    startHover();
-  }, {passive:false});
-
-  rect.addEventListener('touchend', e => {
-    stopHover();
-    const link = rect.closest('a');
-    if(link) window.open(link.href, link.target || '_self');
-  });
+document.querySelectorAll('g').forEach(group => {
+  const baseImage = group.querySelector('.base-image');
+  group.querySelectorAll('.image-mapper-shape').forEach(rect => attachHover(rect, baseImage));
 });
 </script>
 

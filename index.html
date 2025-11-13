@@ -69,18 +69,22 @@
         const padding = 5;
         const scale = 1.1;
 
-        // *** التغيير هنا: استخدام touchstart للبدء باللمس ***
-        rect.addEventListener('touchstart', e => {
-          // إلغاء الـ default عشان الـ touch ما يعملش scrolling لو ما كنتش عايز
-          e.preventDefault(); 
+        // 🛑 أحداث الماوس (لأجهزة الكمبيوتر)
+        rect.addEventListener('mouseover', startHover);
+        rect.addEventListener('mouseout', stopHover);
+
+        // 🛑 أحداث اللمس (لأجهزة الموبايل والتابلت)
+        rect.addEventListener('touchstart', (e) => {
+          // لمسة طويلة (long press) ممكن تمنع فتح الرابط في touchend، عشان كده بنسيبه شغال
           
           if(activeHover && activeHover !== rect) stopHover();
           if(activeHover === rect) return;
           startHover();
         });
-
-        // *** التغيير هنا: استخدام touchend لإنهاء الهافر وفتح الرابط ***
+        
+        // 🛑 عند رفع الإصبع، بيتوقف الهافر وبيسمح للرابط يفتح
         rect.addEventListener('touchend', stopHover);
+
 
         function startHover() {
           activeHover = rect;
@@ -99,9 +103,6 @@
           clip.appendChild(clipRect);
           clipDefs.appendChild(clip);
 
-          // تحديد مصدر الصورة الصحيح (هنا فيه 4 صور، لكن الكود الأصلي بيستخدم image/1.png بس)
-          // عشان الكود يشتغل صح مع كل الصور، المفروض تحدد مصدر الصورة بناءً على إحداثيات (x,y)
-          // بما إنك ما غيرتش الكود ده، هسيبه زي ما هو بيفترض صورة واحدة:
           zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
           zoomPart.setAttribute('href','image/1.png');
           zoomPart.setAttribute('width','1024');
@@ -138,6 +139,7 @@
         }
       }
 
+      // 🛑 التكرار هنا لازم يبقى بعد تعريف الدالة
       mainGroup.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));
 
       const observer = new MutationObserver(mutations => {

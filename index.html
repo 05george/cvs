@@ -3,23 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>خريطة تفاعلية مع هولد</title>
+<title>خريطة تفاعلية مع Swipe و Hover</title>
 <style>
 html, body {
   margin: 0;
   padding: 0;
   background-color: black;
   height: 100vh;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: flex-start;
 }
 svg {
   display: block;
-  max-width: 100vw;
-  height: 100%;
   width: auto;
+  height: 100%;
 }
 .image-mapper-shape {
   fill: transparent;
@@ -61,13 +60,19 @@ svg {
   <g id="group-4" transform="translate(1024,2454)">
     <image href="image/4.png" width="1024" height="2454" data-image-url="image/4.png" class="base-image"/>
   </g>
-
+</svg>
 <script>
-const allGroups = document.querySelectorAll('g');
+const pages = Array.from(document.querySelectorAll('g[id^="page-"]'));
+let currentPageIndex = 0;
 const clipDefs = document.getElementById('clip-defs');
 let activeHover = null;
 
-function attachHover(rect, index) {
+function showPage(index){
+  pages.forEach((pg,i)=> pg.style.display=(i===index)?'block':'none');
+}
+
+// ==== Hover + Touch-Hold على المستطيلات ====
+function attachHover(rect, index){
   let zoomPart = null;
   let clipPathId = `clip-${index}`;
   let animationId = null;
@@ -75,24 +80,23 @@ function attachHover(rect, index) {
   let touchTimer = null;
 
   const parentGroup = rect.closest('g');
-  const baseImage = parentGroup?.querySelector('.base-image');
-  const imageURL = baseImage?.getAttribute('data-image-url') || 'image/1.png';
-  const imageWidth = parseFloat(baseImage?.getAttribute('width') || 1024);
-  const imageHeight = parseFloat(baseImage?.getAttribute('height') || 2454);
-
-  const transform = parentGroup?.getAttribute('transform') || '';
-  let [offsetX, offsetY] = [0, 0];
+  const baseImage = parentGroup.querySelector('.base-image');
+  const imageURL = baseImage.getAttribute('href') || 'image/1.png';
+  const imageWidth = parseFloat(baseImage.getAttribute('width')||1024);
+  const imageHeight = parseFloat(baseImage.getAttribute('height')||2454);
+  const transform = parentGroup.getAttribute('transform') || '';
+  let [offsetX, offsetY] = [0,0];
   const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
-  if(match){ offsetX = parseFloat(match[1]); offsetY = parseFloat(match[2]); }
+  if(match){ offsetX=parseFloat(match[1]); offsetY=parseFloat(match[2]); }
 
-  // الهاتف: لمس مطول
-  rect.addEventListener('touchstart', e => {
+  // لمس مطول
+  rect.addEventListener('touchstart', e=>{
     e.preventDefault();
-    touchTimer = setTimeout(() => startHover(), 0);
+    touchTimer = setTimeout(()=> startHover(),0);
   }, {passive:false});
 
-  rect.addEventListener('touchend', e => {
-    if(touchTimer){ clearTimeout(touchTimer); touchTimer=null; 
+  rect.addEventListener('touchend', e=>{
+    if(touchTimer){ clearTimeout(touchTimer); touchTimer=null;
       if(!activeHover){
         const link = rect.closest('a');
         if(link) window.open(link.href, link.target||'_self');
@@ -107,39 +111,39 @@ function attachHover(rect, index) {
   rect.addEventListener('touchcancel', stopHover);
 
   function startHover(){
-    activeHover = rect;
-    const x = parseFloat(rect.getAttribute('x'));
-    const y = parseFloat(rect.getAttribute('y'));
-    const width = parseFloat(rect.getAttribute('width'));
-    const height = parseFloat(rect.getAttribute('height'));
+    activeHover=rect;
+    const x=parseFloat(rect.getAttribute('x'));
+    const y=parseFloat(rect.getAttribute('y'));
+    const width=parseFloat(rect.getAttribute('width'));
+    const height=parseFloat(rect.getAttribute('height'));
 
-    const clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
-    clip.setAttribute('id', clipPathId);
-    const clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    clipRect.setAttribute('x', x+offsetX);
-    clipRect.setAttribute('y', y+offsetY);
-    clipRect.setAttribute('width', width);
-    clipRect.setAttribute('height', height);
+    const clip=document.createElementNS('http://www.w3.org/2000/svg','clipPath');
+    clip.setAttribute('id',clipPathId);
+    const clipRect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    clipRect.setAttribute('x',x+offsetX);
+    clipRect.setAttribute('y',y+offsetY);
+    clipRect.setAttribute('width',width);
+    clipRect.setAttribute('height',height);
     clip.appendChild(clipRect);
     clipDefs.appendChild(clip);
 
-    zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
-    zoomPart.setAttribute('href', imageURL);
-    zoomPart.setAttribute('width', imageWidth);
-    zoomPart.setAttribute('height', imageHeight);
+    zoomPart=document.createElementNS('http://www.w3.org/2000/svg','image');
+    zoomPart.setAttribute('href',imageURL);
+    zoomPart.setAttribute('width',imageWidth);
+    zoomPart.setAttribute('height',imageHeight);
     zoomPart.setAttribute('class','zoom-part');
     zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
-    zoomPart.setAttribute('x', offsetX);
-    zoomPart.setAttribute('y', offsetY);
-    zoomPart.style.transformOrigin = `${x+width/2+offsetX}px ${y+height/2+offsetY}px`;
-    zoomPart.style.opacity = 1;
+    zoomPart.setAttribute('x',offsetX);
+    zoomPart.setAttribute('y',offsetY);
+    zoomPart.style.transformOrigin=`${x+width/2+offsetX}px ${y+height/2+offsetY}px`;
+    zoomPart.style.opacity=1;
     rect.ownerSVGElement.appendChild(zoomPart);
 
-    rect.style.transformOrigin = `${x+width/2}px ${y+height/2}px`;
-    rect.style.transform = `scale(${scale})`;
-    
+    rect.style.transformOrigin=`${x+width/2}px ${y+height/2}px`;
+    rect.style.transform=`scale(${scale})`;
+
     let hue=0;
-    animationId = setInterval(()=>{
+    animationId=setInterval(()=>{
       hue=(hue+1)%360;
       const glow=`drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue+60)%360},100%,60%))`;
       rect.style.filter=glow;
@@ -153,16 +157,36 @@ function attachHover(rect, index) {
     rect.style.filter='none';
     if(animationId) clearInterval(animationId);
     if(zoomPart){ zoomPart.remove(); zoomPart=null; }
-    const existingClip = document.getElementById(clipPathId);
+    const existingClip=document.getElementById(clipPathId);
     if(existingClip) existingClip.remove();
-    activeHover = null;
+    activeHover=null;
   }
 }
 
-// تطبيق على كل المستطيلات الحالية
-allGroups.forEach(group => {
-  group.querySelectorAll('.image-mapper-shape').forEach((rect,i)=>attachHover(rect,i+Date.now()));
+// تطبيق على كل المستطيلات
+pages.forEach(page=>{
+  page.querySelectorAll('.image-mapper-shape').forEach((rect,i)=> attachHover(rect, i+Date.now()));
 });
+
+// ==== Swipe للصفحات ====
+let startX=0, endX=0;
+const swipeThreshold=50;
+const svg=document.getElementById('interactive-map');
+
+svg.addEventListener('touchstart', e=> startX=e.touches[0].clientX );
+svg.addEventListener('touchmove', e=> endX=e.touches[0].clientX );
+svg.addEventListener('touchend', e=>{
+  const deltaX=endX-startX;
+  if(Math.abs(deltaX)>swipeThreshold){
+    if(deltaX>0) currentPageIndex=(currentPageIndex-1+pages.length)%pages.length;
+    else currentPageIndex=(currentPageIndex+1)%pages.length;
+    showPage(currentPageIndex);
+  }
+  startX=endX=0;
+});
+
+// اظهار الصفحة الأولى
+showPage(currentPageIndex);
 </script>
 
 </body>

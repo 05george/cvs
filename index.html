@@ -92,7 +92,7 @@ function attachHover(rect, index) {
   // لمس مطول للهاتف
   rect.addEventListener('touchstart', e => {
     e.preventDefault();
-    touchTimer = setTimeout(() => startHover(), 200); 
+    touchTimer = setTimeout(() => startHover(), 0); 
   }, {passive:false});
 
   rect.addEventListener('touchend', e => {

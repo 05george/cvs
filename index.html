@@ -47,7 +47,7 @@
 </head>
 <body>
   <svg xmlns="http://www.w3.org/2000/svg"
-       xmlns:xlink="http://www.w3.org/1999/xlink"
+       xmlns:xlink="http://www.w3.org/1993/xlink"
        viewBox="0 0 2048 4908"
        preserveAspectRatio="xMidYMid meet"
        id="main-svg"> 
@@ -143,7 +143,7 @@
 
 
       function attachHover(rect, i) {
-        
+
         const anchor = rect.closest('a');
 
         const clipPathId = `clip-${i}-${Date.now()}`;
@@ -158,25 +158,27 @@
 
         rect.setAttribute('data-index', i);
 
-        // 💻 حدث الماوس للكمبيوتر (مفيش تغيير)
+        // 💻 حدث الماوس للكمبيوتر
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
 
-        // 📱 حدث اللمس للموبايل (touchstart بيشغل الـ Hover)
+        // 📱 حدث اللمس للموبايل: startHover عند اللمس
         rect.addEventListener('touchstart', startHover);
 
-        // 🆕 التعديل المهم هنا: touchend بيقفل الهافر وبيفتح الرابط بعدها
+        // 🆕 التعديل الأساسي: touchend بيقفل الهافر وبيفتح الرابط يدوياً بدون delay
         rect.addEventListener('touchend', (e) => {
              // إيقاف الـ Hover فوراً
              cleanupHover(); 
-             
-             // 🆕 فتح الرابط يدوياً عشان ميبقاش فيه delay
+
+             // 🆕 فتح الرابط يدوياً لضمان عدم وجود delay
              if (anchor && anchor.href && anchor.href !== '#') {
-                e.preventDefault(); // منع الإجراء الافتراضي عشان نتحكم في الفتح
+                e.preventDefault(); // منع سلوك الـ click الطبيعي لتجنب التأخير
                 
-                // فتح الرابط بنفس طريقة الـ setLinkTarget (في نفس التاب لو موبايل، في تاب جديد لو كمبيوتر)
+                // تحديد طريقة الفتح (نفس التاب للموبايل، تاب جديد للكمبيوتر)
                 const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
-                if (!isMobile) {
+                
+                // لو مش موبايل وعندنا target="_blank" (من setLinkTarget)، نفتح في نافذة جديدة
+                if (!isMobile && anchor.getAttribute('target') === '_blank') {
                     window.open(anchor.href, '_blank');
                 } else {
                     window.location.href = anchor.href;
@@ -184,8 +186,8 @@
              }
         });
 
-        // ❌ حذفنا الحدث 'click' على الـ <a> عشان ما يعملش تعارض مع الـ touchend
-
+        // ❌ حذفنا أي حدث 'click' إضافي لمنع التعارض.
+        
         function startHover() {
           if(activeState.rect === rect) return;
 
@@ -280,7 +282,7 @@
 
         allLinks.forEach(link => {
           if (isMobile) {
-             // ❌ تم إزالة setAttribute('target', '_blank') هنا عشان ما يعملش مشكلة مع الـ touchend
+             // إزالة target="_blank" على الموبايل عشان يفتح في نفس التاب ويسهل عملية الـ touchend
             link.removeAttribute('target');
           } else {
             link.setAttribute('target', '_blank'); 

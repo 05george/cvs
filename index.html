@@ -21,7 +21,6 @@
       align-items: flex-start;
     }
 
-    /* الـ SVG دلوقتي هتبقى أطول عشان الـ viewbox الجديد */
     svg {
       display: block;
       max-width: 100vw;
@@ -57,17 +56,6 @@
     <g transform="translate(0,0)" id="group-1">
       <image x="0" y="0" xlink:href="image/1.png" width="1024" height="2454" id="base-image-1"/>
       
-      <a href="micro/1.pdf"><rect x="368" y="703" width="115" height="380" class="image-mapper-shape"/></a>
-      <a href="patho/1.pdf"><rect x="368" y="1083" width="115" height="253.5" class="image-mapper-shape"/></a>
-      <a href="patho/q/1.pdf"><rect x="368" y="1339" width="115" height="125" class="image-mapper-shape red-stroke"/></a>
-      <a href="physio/2.pdf"><rect x="368" y="1465" width="115" height="380" class="image-mapper-shape"/></a>
-      <a href="anatomy/1.pdf"><rect x="368" y="1845" width="115" height="380" class="image-mapper-shape"/></a>
-      <a href="physio/1.pdf"><rect x="598" y="366" width="114.5" height="315" class="image-mapper-shape"/></a>
-      <a href="histo/1.pdf"><rect x="712.35" y="702" width="115" height="380" class="image-mapper-shape"/></a>
-      <a href="anatomy/2.pdf"><rect x="712.35" y="1465" width="115" height="380" class="image-mapper-shape"/></a>
-      <a href="physio/2.pdf"><rect x="598" y="1846" width="115" height="253.4" class="image-mapper-shape"/></a>
-      <a href="physio/q/1.pdf"><rect x="598" y="2100" width="115" height="127" class="image-mapper-shape red-stroke"/></a>
-      
       <a href="block/physio/1.pdf"><rect x="254" y="423" width="114" height="467" class="image-mapper-shape"/></a>
       <a href="block/histo/1.pdf"><rect x="253" y="1403" width="114" height="438" class="image-mapper-shape"/></a>
       <a href="block/physio/2.pdf"><rect x="484" y="314" width="113" height="459" class="image-mapper-shape"/></a>
@@ -78,40 +66,18 @@
     <g transform="translate(1024,0)" id="group-2">
       <image x="0" y="0" xlink:href="image/2.png" width="1024" height="2454" id="base-image-2" preserveAspectRatio="xMidYMid meet"/>
       
-      <a xlink:href="https://drive.google.com/file/d/1vLk8z7AGqjlJZx1rvL_e7tQa8arC1qud/view?usp=sharing">
-      <rect x="137.73099415204678" y="348.2036549707604" width="115.39897660818713" height="128.4653508771928" class="image-mapper-shape blue-stroke"/>
-      </a>
-      <a xlink:href="pharma/1.pdf">
-      <rect x="137.7824195906433" y="477.00350877192994" width="114.69828216374268" height="257.3026315789471" class="image-mapper-shape" data-index="2"></rect>
-      </a>
-      <a xlink:href="#">
-      <rect x="137.72317251461988" y="1827.9460526315788" width="115.11458333333331" height="431.385964912281" class="image-mapper-shape" data-index="3"></rect>
-      </a>
-      <a xlink:href="#">
-      <rect x="367.910745614035" y="1344.915497076024" width="115.7188596491228" height="482.88011695906425" class="image-mapper-shape" data-index="4"></rect>
-      </a>
-      <a xlink:href="#">
-      <rect x="483.5782894736842" y="1104.3466374269003" width="114.13428362573097" height="361.9701754385967" class="image-mapper-shape" data-index="5"></rect>
-      </a>
-      <a xlink:href="#">
-      <rect x="597.5236842105263" y="1465.724707602339" width="114.63859649122799" height="362.65745614035086" class="image-mapper-shape" data-index="6"></rect>
-      </a>
-      <a xlink:href="#">
-      <rect x="711.6490497076023" y="477.07792397660813" width="114.72726608187133" height="377.8353801169589" class="image-mapper-shape" data-index="7"></rect>
-      </a>
-      <a xlink:href="#">
-      <rect x="712.5633040935672" y="1345.1815789473683" width="114.0740497076024" height="482.9260233918128" class="image-mapper-shape" data-index="9"></rect>
-      </a>
-    </g>
+      </g>
 
     <g transform="translate(0,2454)" id="group-3">
       <image x="0" y="0" xlink:href="image/3.png" width="1024" height="2454" id="base-image-3"/>
+      
       </g>
     
     <g transform="translate(1024,2454)" id="group-4">
       <image x="0" y="0" xlink:href="image/4.png" width="1024" height="2454" id="base-image-4"/>
+      
       </g>
-
+    
     <script>
       const mainSvg = document.getElementById('main-svg');
       const clipDefs = document.getElementById('clip-defs');
@@ -128,33 +94,34 @@
       function getTransformX(groupElement) {
           const transformAttr = groupElement.getAttribute('transform');
           if (!transformAttr) return 0;
-          // الدالة دي بقت أكثر دقة عشان تقرا الـ translate(X,Y) صح
+          // بتقرا الإزاحة الأفقية (X) من الـ translate(X, Y)
           const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
-          return match ? parseFloat(match[1]) : 0; // بتاخد الـ X بس
+          return match ? parseFloat(match[1]) : 0; 
+      }
+      
+      function getTransformY(groupElement) {
+          const transformAttr = groupElement.getAttribute('transform');
+          if (!transformAttr) return 0;
+          // بتقرا الإزاحة الرأسية (Y) من الـ translate(X, Y)
+          const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
+          return match ? parseFloat(match[2]) : 0; 
       }
 
+      // الدالة دي بقت بسيطة دلوقتي لأن كل صورة ليها مجموعتها
       function getGroupImage(parentGroup) {
-          // هتدور على أول وسم <image> جوه المجموعة
           const baseImage = parentGroup.querySelector('image');
           if (!baseImage) return null;
 
           const IMAGE_SRC = baseImage.getAttribute('href') || baseImage.getAttribute('xlink:href');
           const IMAGE_WIDTH = parseFloat(baseImage.getAttribute('width'));
           const IMAGE_HEIGHT = parseFloat(baseImage.getAttribute('height'));
-
+          
           if (!IMAGE_SRC || isNaN(IMAGE_WIDTH) || isNaN(IMAGE_HEIGHT)) return null;
-
-          // لازم نرجع الـ Y Offset بتاع المجموعة عشان الصورة الأصلية في الهوفر تتحط صح
-          const transformAttr = parentGroup.getAttribute('transform');
-          const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
-          const groupOffsetY = match ? parseFloat(match[2]) : 0; 
-
 
           return { 
               src: IMAGE_SRC, 
               width: IMAGE_WIDTH, 
-              height: IMAGE_HEIGHT, 
-              offsetY: groupOffsetY // الـ Y Offset بتاع المجموعة
+              height: IMAGE_HEIGHT
           };
       }
 
@@ -184,10 +151,11 @@
         const scale = 1.1;
         const parentGroup = rect.closest('g'); 
 
-        const imageData = getGroupImage(parentGroup);
+        const imageData = getGroupImage(parentGroup); 
         if (!imageData) return; 
 
         const groupOffsetX = getTransformX(parentGroup);
+        const groupOffsetY = getTransformY(parentGroup); // الإزاحة الرأسية للمجموعة
 
         rect.setAttribute('data-index', i);
 
@@ -213,9 +181,9 @@
           const width = parseFloat(rect.getAttribute('width'));
           const height = parseFloat(rect.getAttribute('height'));
 
-          // الإحداثيات المطلقة في الـ SVG كله (عشان الـ Clip Path)
+          // الإحداثيات المطلقة في الـ SVG كله (لحساب الـ Clip Path)
           const absoluteX = x + groupOffsetX; 
-          const absoluteY = y + imageData.offsetY; // الـ Y بتاعة المستطيل + الـ Y إزاحة المجموعة
+          const absoluteY = y + groupOffsetY; 
 
           let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
           clip.setAttribute('id', clipPathId);
@@ -235,9 +203,9 @@
           zoomPart.setAttribute('class','zoom-part');
           zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
 
-          // تحديد مكان الصورة المقطوعة عشان يظهر مكانها بالظبط 
+          // تحديد مكان الصورة المقطوعة بيعتمد على إزاحة المجموعة
           zoomPart.setAttribute('x', groupOffsetX); 
-          zoomPart.setAttribute('y', imageData.offsetY); 
+          zoomPart.setAttribute('y', groupOffsetY); 
 
           // التكبير هيحصل من منتصف المستطيل المطلق
           zoomPart.style.transformOrigin = `${absoluteX + width/2}px ${absoluteY + height/2}px`;
@@ -288,18 +256,14 @@
       });
       
       function setLinkTarget() {
-        // تحديد الموبايل بيتم هنا عشان نعرف نتحكم في طريقة فتح الرابط
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
         
-        // البحث عن الروابط بـ href أو xlink:href
         const allLinks = document.querySelectorAll('a[xlink\\:href], a[href]');
 
         allLinks.forEach(link => {
           if (isMobile) {
-            // لو موبايل، نفتح في نفس النافذة عشان مفيش مشاكل في الـ iOS
             link.removeAttribute('target');
           } else {
-            // لو كمبيوتر، نفتح في نافذة جديدة
             link.setAttribute('target', '_blank'); 
           }
         });

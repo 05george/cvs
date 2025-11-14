@@ -144,7 +144,7 @@
 
       function attachHover(rect, i) {
         
-        const anchor = rect.closest('a'); // 🆕 إمساك وسم الـ <a>
+        const anchor = rect.closest('a');
 
         const clipPathId = `clip-${i}-${Date.now()}`;
         const scale = 1.1;
@@ -158,21 +158,33 @@
 
         rect.setAttribute('data-index', i);
 
+        // 💻 حدث الماوس للكمبيوتر (مفيش تغيير)
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
 
+        // 📱 حدث اللمس للموبايل (touchstart بيشغل الـ Hover)
         rect.addEventListener('touchstart', startHover);
 
+        // 🆕 التعديل المهم هنا: touchend بيقفل الهافر وبيفتح الرابط بعدها
         rect.addEventListener('touchend', (e) => {
+             // إيقاف الـ Hover فوراً
              cleanupHover(); 
+             
+             // 🆕 فتح الرابط يدوياً عشان ميبقاش فيه delay
+             if (anchor && anchor.href && anchor.href !== '#') {
+                e.preventDefault(); // منع الإجراء الافتراضي عشان نتحكم في الفتح
+                
+                // فتح الرابط بنفس طريقة الـ setLinkTarget (في نفس التاب لو موبايل، في تاب جديد لو كمبيوتر)
+                const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
+                if (!isMobile) {
+                    window.open(anchor.href, '_blank');
+                } else {
+                    window.location.href = anchor.href;
+                }
+             }
         });
-        
-        // 🆕 إيقاف الهافر عند الضغط على الرابط (قبل فتح الرابط)
-        if (anchor) {
-            anchor.addEventListener('click', cleanupHover);
-        }
-        // ----------------------------------------------------
 
+        // ❌ حذفنا الحدث 'click' على الـ <a> عشان ما يعملش تعارض مع الـ touchend
 
         function startHover() {
           if(activeState.rect === rect) return;
@@ -268,6 +280,7 @@
 
         allLinks.forEach(link => {
           if (isMobile) {
+             // ❌ تم إزالة setAttribute('target', '_blank') هنا عشان ما يعملش مشكلة مع الـ touchend
             link.removeAttribute('target');
           } else {
             link.setAttribute('target', '_blank'); 

@@ -55,7 +55,7 @@
 
     <g transform="translate(0,0)" id="group-1">
       <image x="0" y="0" xlink:href="image/1.png" width="1024" height="2454" id="base-image-1"/>
-      
+
       <a href="block/physio/1.pdf"><rect x="254" y="423" width="114" height="467" class="image-mapper-shape"/></a>
       <a href="block/histo/1.pdf"><rect x="253" y="1403" width="114" height="438" class="image-mapper-shape"/></a>
       <a href="block/physio/2.pdf"><rect x="484" y="314" width="113" height="459" class="image-mapper-shape"/></a>
@@ -65,23 +65,23 @@
 
     <g transform="translate(1024,0)" id="group-2">
       <image x="0" y="0" xlink:href="image/2.png" width="1024" height="2454" id="base-image-2" preserveAspectRatio="xMidYMid meet"/>
-      
+
       </g>
 
     <g transform="translate(0,2454)" id="group-3">
       <image x="0" y="0" xlink:href="image/3.png" width="1024" height="2454" id="base-image-3"/>
-      
+
       </g>
-    
+
     <g transform="translate(1024,2454)" id="group-4">
       <image x="0" y="0" xlink:href="image/4.png" width="1024" height="2454" id="base-image-4"/>
-      
+
       </g>
-    
+
     <script>
       const mainSvg = document.getElementById('main-svg');
       const clipDefs = document.getElementById('clip-defs');
-      
+
       const activeState = {
           rect: null,
           zoomPart: null,
@@ -94,20 +94,17 @@
       function getTransformX(groupElement) {
           const transformAttr = groupElement.getAttribute('transform');
           if (!transformAttr) return 0;
-          // بتقرا الإزاحة الأفقية (X) من الـ translate(X, Y)
           const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
           return match ? parseFloat(match[1]) : 0; 
       }
-      
+
       function getTransformY(groupElement) {
           const transformAttr = groupElement.getAttribute('transform');
           if (!transformAttr) return 0;
-          // بتقرا الإزاحة الرأسية (Y) من الـ translate(X, Y)
           const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
           return match ? parseFloat(match[2]) : 0; 
       }
 
-      // الدالة دي بقت بسيطة دلوقتي لأن كل صورة ليها مجموعتها
       function getGroupImage(parentGroup) {
           const baseImage = parentGroup.querySelector('image');
           if (!baseImage) return null;
@@ -115,7 +112,7 @@
           const IMAGE_SRC = baseImage.getAttribute('href') || baseImage.getAttribute('xlink:href');
           const IMAGE_WIDTH = parseFloat(baseImage.getAttribute('width'));
           const IMAGE_HEIGHT = parseFloat(baseImage.getAttribute('height'));
-          
+
           if (!IMAGE_SRC || isNaN(IMAGE_WIDTH) || isNaN(IMAGE_HEIGHT)) return null;
 
           return { 
@@ -127,7 +124,7 @@
 
       function cleanupHover() {
         if (!activeState.rect) return;
-          
+
         if(activeState.animationId) clearInterval(activeState.animationId);
 
         activeState.rect.style.transform = 'scale(1)';
@@ -137,7 +134,7 @@
 
         const currentClip = document.getElementById(activeState.clipPathId);
         if(currentClip) currentClip.remove();
-          
+
         activeState.rect = null;
         activeState.zoomPart = null;
         activeState.animationId = null;
@@ -147,6 +144,8 @@
 
       function attachHover(rect, i) {
         
+        const anchor = rect.closest('a'); // 🆕 إمساك وسم الـ <a>
+
         const clipPathId = `clip-${i}-${Date.now()}`;
         const scale = 1.1;
         const parentGroup = rect.closest('g'); 
@@ -155,24 +154,31 @@
         if (!imageData) return; 
 
         const groupOffsetX = getTransformX(parentGroup);
-        const groupOffsetY = getTransformY(parentGroup); // الإزاحة الرأسية للمجموعة
+        const groupOffsetY = getTransformY(parentGroup); 
 
         rect.setAttribute('data-index', i);
 
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
-        
+
         rect.addEventListener('touchstart', startHover);
-        
+
         rect.addEventListener('touchend', (e) => {
              cleanupHover(); 
         });
+        
+        // 🆕 إيقاف الهافر عند الضغط على الرابط (قبل فتح الرابط)
+        if (anchor) {
+            anchor.addEventListener('click', cleanupHover);
+        }
+        // ----------------------------------------------------
+
 
         function startHover() {
           if(activeState.rect === rect) return;
 
           cleanupHover(); 
-          
+
           activeState.rect = rect;
           activeState.clipPathId = clipPathId;
 
@@ -232,7 +238,7 @@
 
         function stopHover(e) {
           const targetRect = e ? (e.target.tagName === 'rect' ? e.target : e.target.closest('a')?.querySelector('.image-mapper-shape')) : rect;
-          
+
           if(targetRect === activeState.rect && e.type === 'mouseout'){
               cleanupHover();
           }
@@ -254,10 +260,10 @@
           });
           observer.observe(group,{childList:true, subtree:true});
       });
-      
+
       function setLinkTarget() {
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
-        
+
         const allLinks = document.querySelectorAll('a[xlink\\:href], a[href]');
 
         allLinks.forEach(link => {

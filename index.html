@@ -68,33 +68,41 @@
       let activeHover = null;
       const ORIGINAL_IMAGE_HEIGHT = 2454;
       const IMAGE_WIDTH = 1024;
-      const TOTAL_WIDTH = 2048;
 
       /**
-       * 🛠️ دالة مساعدة لتحديد مصدر وموقع الصورة بناءً على إحداثيات المستطيل
+       * 🛠️ دالة مساعدة لتحديد مصدر وموقع الصورة بناءً على إحداثيات المستطيل (مرنة للمستقبل)
        */
       function getImageData(rectX, rectY) {
-          const isRight = rectX >= IMAGE_WIDTH;
-          const isBottom = rectY >= ORIGINAL_IMAGE_HEIGHT;
-          
-          let imageIndex = 0;
 
-          if (!isRight && !isBottom) {
-              imageIndex = 1; // image/1.png
-          } else if (isRight && !isBottom) {
-              imageIndex = 2; // image/2.png
-          } else if (!isRight && isBottom) {
-              imageIndex = 3; // image/3.png
-          } else { // isRight && isBottom
-              imageIndex = 4; // image/4.png
+          const imageElements = mainGroup.querySelectorAll('image');
+          let targetImage = null;
+
+          // نلف على كل صورة ونشوف هل المستطيل واقع في نطاق إحداثياتها
+          for (const img of imageElements) {
+              const imgX = parseFloat(img.getAttribute('x'));
+              const imgY = parseFloat(img.getAttribute('y'));
+              const imgWidth = parseFloat(img.getAttribute('width'));
+              const imgHeight = parseFloat(img.getAttribute('height'));
+
+              // لو المستطيل (أو جزء منه) واقع بين إحداثيات بداية ونهاية الصورة دي:
+              if (rectX >= imgX && 
+                  rectX < imgX + imgWidth && 
+                  rectY >= imgY && 
+                  rectY < imgY + imgHeight) {
+                  targetImage = img;
+                  break; 
+              }
           }
-          
-          const imageElement = mainGroup.querySelector(`image:nth-child(${imageIndex})`);
-          
+
+          // لو ما لقيناش حاجة، نرجع بيانات الصورة الأولى كـ default
+          if (!targetImage) {
+              targetImage = mainGroup.querySelector('image:first-child');
+          }
+
           // 🛠️ جلب إحداثيات الصورة الأصلية ومصدرها
-          const IMAGE_SRC = imageElement ? (imageElement.getAttribute('href') || imageElement.getAttribute('xlink:href')) : 'image/1.png';
-          const imageX = parseFloat(imageElement.getAttribute('x'));
-          const imageY = parseFloat(imageElement.getAttribute('y'));
+          const IMAGE_SRC = targetImage ? (targetImage.getAttribute('href') || targetImage.getAttribute('xlink:href')) : 'image/1.png';
+          const imageX = parseFloat(targetImage.getAttribute('x'));
+          const imageY = parseFloat(targetImage.getAttribute('y'));
 
 
           return { 
@@ -138,7 +146,7 @@
           const imageData = getImageData(x, y);
           const IMAGE_SRC = imageData.src;
           const imageX = imageData.imageX;
-          const imageY = imageData.imageY; // موقع الصورة الأصلية داخل الـ SVG
+          const imageY = imageData.imageY;
 
 
           // 1. إنشاء Clip Path (الإحداثيات الكلية لـ rect)
@@ -160,16 +168,14 @@
           zoomPart.setAttribute('class','zoom-part');
           zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
 
-          // 🛠️🛠️🛠️ التعديل والتصحيح الرئيسي هنا 🛠️🛠️🛠️
           // نحدد الـ X, Y للـ zoomPart ليكونوا نفس X, Y للصورة الأصلية اللي بيشير ليها المستطيل
           zoomPart.setAttribute('x', imageX); 
           zoomPart.setAttribute('y', imageY); 
-          // ده بيضمن أن الـ zoomPart (اللي هو الصورة الواحدة) هيتطابق مع الإحداثيات الكلية للـ clip path
-          
+
           // تحديد مركز التحويل ليكون مركز المستطيل الكلي
           zoomPart.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
           zoomPart.style.opacity = 0;
-          
+
           // إضافة الجزء المزوم مباشرة للـ SVG الرئيسي لضمان ظهوره في الأعلى
           mainSvg.appendChild(zoomPart);
 
@@ -215,8 +221,10 @@
         }
       }
 
+      // تطبيق الـ attachHover على كل المستطيلات
       mainGroup.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));
 
+      // المراقبة لأي مستطيلات تتم إضافتها ديناميكياً
       const observer = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
           mutation.addedNodes.forEach((node, i) => {

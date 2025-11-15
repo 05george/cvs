@@ -3,14 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <meta property="og:title" content=" ">
-  <meta property="og:description" content=" ">
-  <meta property="og:image" content=" ">
-
-  <style>
-
-    html, body {
+      <style>
+      html, body {
       margin: 0;
       padding: 0;
       background-color: black;
@@ -18,31 +12,27 @@
       overflow: auto;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-    }
+      align-items: flex-start;}
 
-    svg {
-      display: block;
+    svg {display: block;
       max-width: 100vw;
       height: 100%;
-      width: auto;
-    }
+      width: auto;}
 
     .image-mapper-shape {
       fill: transparent;
-      stroke: yellow;
+      stroke: yellow; 
       stroke-width: 2px;
       transform-origin: center center;
-      transition: transform 0.3s ease, filter 0.3s ease;
-    }
-    .red-stroke { stroke: red; }
-    .blue-stroke { stroke: blue; }
-
-    .zoom-part {
-      pointer-events: none;
+      transition: transform 0.3s ease, filter 0.3s ease;}
+    .q { stroke: red; } 
+    .v { stroke: blue; } 
+    .ipc {stroke: white;} 
+    .o {stroke: #80CBC4;} 
+    .a {stroke: #F48FB1;} 
+    .zoom-part {pointer-events: none;
       transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
-      image-rendering: auto;
-    }
+      image-rendering: auto;}
   </style>
 </head>
 <body>
@@ -75,9 +65,7 @@
 
     <g transform="translate(1024,2454)" id="group-4">
       <image x="0" y="0" xlink:href="image/4.png" width="1024" height="2454" id="base-image-4"/>
-
       </g>
-
     <script>
       const mainSvg = document.getElementById('main-svg');
       const clipDefs = document.getElementById('clip-defs');
@@ -95,14 +83,14 @@
           const transformAttr = groupElement.getAttribute('transform');
           if (!transformAttr) return 0;
           const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
-          return match ? parseFloat(match[1]) : 0; 
+          return match ? parseFloat(match[1]) : 0;
       }
 
       function getTransformY(groupElement) {
           const transformAttr = groupElement.getAttribute('transform');
           if (!transformAttr) return 0;
           const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
-          return match ? parseFloat(match[2]) : 0; 
+          return match ? parseFloat(match[2]) : 0;
       }
 
       function getGroupImage(parentGroup) {
@@ -113,13 +101,9 @@
           const IMAGE_WIDTH = parseFloat(baseImage.getAttribute('width'));
           const IMAGE_HEIGHT = parseFloat(baseImage.getAttribute('height'));
 
-          if (!IMAGE_SRC || isNaN(IMAGE_WIDTH) || isNaN(IMAGE_HEIGHT)) return null;
+          if (isNaN(IMAGE_WIDTH) || isNaN(IMAGE_HEIGHT)) return null;
 
-          return { 
-              src: IMAGE_SRC, 
-              width: IMAGE_WIDTH, 
-              height: IMAGE_HEIGHT
-          };
+          return { src: IMAGE_SRC, width: IMAGE_WIDTH, height: IMAGE_HEIGHT };
       }
 
       function cleanupHover() {
@@ -150,7 +134,7 @@
         const scale = 1.1;
         const parentGroup = rect.closest('g'); 
 
-        const imageData = getGroupImage(parentGroup); 
+        const imageData = getGroupImage(parentGroup);
         if (!imageData) return; 
 
         const groupOffsetX = getTransformX(parentGroup);
@@ -158,36 +142,17 @@
 
         rect.setAttribute('data-index', i);
 
-        // 💻 حدث الماوس للكمبيوتر
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
 
-        // 📱 حدث اللمس للموبايل: startHover عند اللمس
         rect.addEventListener('touchstart', startHover);
 
-        // 🆕 التعديل الأساسي: touchend بيقفل الهافر وبيفتح الرابط يدوياً بدون delay
-        rect.addEventListener('touchend', (e) => {
-             // إيقاف الـ Hover فوراً
-             cleanupHover(); 
+        rect.addEventListener('touchend', cleanupHover);
 
-             // 🆕 فتح الرابط يدوياً لضمان عدم وجود delay
-             if (anchor && anchor.href && anchor.href !== '#') {
-                e.preventDefault(); // منع سلوك الـ click الطبيعي لتجنب التأخير
-                
-                // تحديد طريقة الفتح (نفس التاب للموبايل، تاب جديد للكمبيوتر)
-                const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
-                
-                // لو مش موبايل وعندنا target="_blank" (من setLinkTarget)، نفتح في نافذة جديدة
-                if (!isMobile && anchor.getAttribute('target') === '_blank') {
-                    window.open(anchor.href, '_blank');
-                } else {
-                    window.location.href = anchor.href;
-                }
-             }
-        });
+        if (anchor) {
+            anchor.removeEventListener('click', cleanupHover); 
+        }
 
-        // ❌ حذفنا أي حدث 'click' إضافي لمنع التعارض.
-        
         function startHover() {
           if(activeState.rect === rect) return;
 
@@ -201,8 +166,7 @@
           const width = parseFloat(rect.getAttribute('width'));
           const height = parseFloat(rect.getAttribute('height'));
 
-          // الإحداثيات المطلقة في الـ SVG كله (لحساب الـ Clip Path)
-          const absoluteX = x + groupOffsetX; 
+          const absoluteX = x + groupOffsetX;
           const absoluteY = y + groupOffsetY; 
 
           let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
@@ -223,18 +187,15 @@
           zoomPart.setAttribute('class','zoom-part');
           zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
 
-          // تحديد مكان الصورة المقطوعة بيعتمد على إزاحة المجموعة
           zoomPart.setAttribute('x', groupOffsetX); 
           zoomPart.setAttribute('y', groupOffsetY); 
 
-          // التكبير هيحصل من منتصف المستطيل المطلق
           zoomPart.style.transformOrigin = `${absoluteX + width/2}px ${absoluteY + height/2}px`;
           zoomPart.style.opacity = 0;
 
           mainSvg.appendChild(zoomPart);
           activeState.zoomPart = zoomPart;
 
-          // تأثير الحركة على المستطيل الشفاف نفسه
           rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
           rect.style.transform = `scale(${scale})`;
           zoomPart.style.transform = `scale(${scale})`;
@@ -260,20 +221,23 @@
       }
 
       groups.forEach(group => {
-          group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));
-
-          const observer = new MutationObserver(mutations => {
-            mutations.forEach(mutation => {
-              mutation.addedNodes.forEach((node, i) => {
-                if(node.tagName==='A'){
-                  const rect = node.querySelector('rect.image-mapper-shape');
-                  if(rect) attachHover(rect, Date.now()+i);
-                }
-              });
-            });
+          group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => {
+            rect.setAttribute('data-processed', 'true'); 
+            attachHover(rect, i);
           });
-          observer.observe(group,{childList:true, subtree:true});
       });
+
+      const rootObserver = new MutationObserver(() => {
+        document
+          .querySelectorAll('rect.image-mapper-shape:not([data-processed])')
+          .forEach((rect, i) => {
+            rect.setAttribute('data-processed', 'true');
+            attachHover(rect, i);
+          });
+      });
+
+      rootObserver.observe(mainSvg, { childList: true, subtree: true });
+
 
       function setLinkTarget() {
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
@@ -282,7 +246,6 @@
 
         allLinks.forEach(link => {
           if (isMobile) {
-             // إزالة target="_blank" على الموبايل عشان يفتح في نفس التاب ويسهل عملية الـ touchend
             link.removeAttribute('target');
           } else {
             link.setAttribute('target', '_blank'); 
